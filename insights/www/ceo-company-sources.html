@@ -1,0 +1,133 @@
+{% extends "templates/web.html" %}
+{% block page_content %}
+<div id="company-registration" class="container py-4">
+ <div class="d-flex justify-content-between align-items-center mb-3">
+  <div><h2>CEO Company Sources</h2><p class="text-muted">Add an ERPNext database without writing SQL. All companies must use SAR.</p></div>
+  <a id="dashboard-link" class="btn btn-outline-secondary">Open CEO dashboard</a>
+ </div>
+ <div class="alert alert-info">Registration includes all companies in the selected database. Combined cards, comparisons, a separate source summary and synchronization are configured automatically. Totals are management figures, without intercompany eliminations.</div>
+ <div id="error" class="alert alert-danger" role="alert" hidden></div>
+ <section class="card p-3 mb-3">
+  <h4>1. Connect the database</h4>
+  <p>Use a read-only database user. In Insights, choose MariaDB, enter the credentials, enable SSL, and save. Return here afterward.</p>
+  <div><a class="btn btn-outline-primary" href="/insights/data-source" target="_blank" rel="noopener">Open Insights Data Sources</a> <button id="reload" class="btn btn-outline-secondary">Reload sources</button></div>
+ </section>
+ <section class="card p-3 mb-3">
+  <h4>2. Select and check the company source</h4>
+  <label for="source">Connected database</label>
+  <select id="source" class="form-control mb-2"><option value="">Select a source</option></select>
+  <label for="label">Display label (for example: New Company)</label>
+  <input id="label" class="form-control mb-3" maxlength="60" placeholder="Short unique source label">
+  <div><button id="preview" class="btn btn-primary">Check companies and SAR currency</button></div>
+  <div id="preview-result" class="mt-3" hidden></div>
+ </section>
+ <section class="card p-3 mb-3">
+  <h4>3. Register</h4>
+  <p>Imports GL Entry, Account and Company, binds the financial query to this database, and adds it to the dashboard. A database can be registered only once.</p>
+  <div><button id="register" class="btn btn-primary" disabled>Register checked source</button></div>
+ </section>
+ <section class="card p-3 mb-3">
+  <h4>4. Review and refresh</h4>
+  <p>Wait for <strong>Registered</strong>, then reload the CEO dashboard and click <strong>Refresh</strong>. It synchronizes every registered source. Hourly imports also remain enabled.</p>
+  <div class="table-responsive"><table class="table"><thead><tr><th>Label</th><th>Companies</th><th>Status</th><th>Progress</th><th>Action</th></tr></thead><tbody id="registrations"></tbody></table></div>
+ </section>
+</div>
+<script>
+(() => {
+ const csrf = {{ csrf_token | tojson }};
+ const root = document.getElementById('company-registration');
+ const find = id => root.querySelector('#' + id);
+ let checkedSource = null;
+ let polling = false;
+ let pollStarted = 0;
+ function showError(message) { find('error').textContent = message; find('error').hidden = false; }
+ async function rpc(method, args = {}, get = false) {
+  const response = await fetch('/api/method/insights.ceo_finance.api.' + method, {
+   method: get ? 'GET' : 'POST', credentials: 'same-origin',
+   headers: {'Content-Type':'application/json', 'X-Frappe-CSRF-Token':csrf},
+   ...(get ? {} : {body: JSON.stringify(args)})
+  });
+  const data = await response.json();
+  if (!response.ok || data.exc) {
+   let message = 'Request failed. Check the connection and try again.';
+   if (data._server_messages) {
+    const messages = JSON.parse(data._server_messages).map(value => JSON.parse(value).message);
+    message = messages.join(' ');
+   }
+   throw new Error(message);
+  }
+  return data.message;
+ }
+ function cell(row, text) { const td = document.createElement('td'); td.textContent = text; row.append(td); return td; }
+ function resetPreview() {
+  checkedSource = null; find('register').disabled = true; find('preview-result').hidden = true;
+ }
+ async function load() {
+  const data = await rpc('get_state', {}, true);
+  find('dashboard-link').href = '/insights/dashboards/' + encodeURIComponent(data.dashboard);
+  const selected = find('source').value;
+  find('source').replaceChildren(new Option('Select a source',''));
+  for (const source of data.sources) find('source').add(new Option(source.title, source.name));
+  find('source').value = selected;
+  find('registrations').replaceChildren();
+  for (const record of data.registrations) {
+   const row = document.createElement('tr');
+   cell(row, record.source_label);
+   const companies = typeof record.companies === 'string' ? JSON.parse(record.companies) : record.companies || [];
+   cell(row, companies.map(c => c.name + ' (SAR)').join(', '));
+   cell(row, record.status); cell(row, record.message || '');
+   const action = cell(row, '');
+   if (record.status === 'Failed') {
+    const button = document.createElement('button'); button.className = 'btn btn-sm btn-outline-primary'; button.textContent = 'Retry';
+    button.onclick = () => run(button, async () => { await rpc('retry_registration', {name:record.name}); pollStarted = Date.now(); await load(); });
+    action.append(button);
+   }
+   find('registrations').append(row);
+  }
+  const pending = data.registrations.some(r => ['Queued','Importing'].includes(r.status));
+  if (pending && !polling) {
+   if (!pollStarted) pollStarted = Date.now();
+   if (Date.now() - pollStarted > 31 * 60 * 1000) {
+    showError('Registration is taking longer than expected. Check the worker and import logs, then reload this page.');
+    return;
+   }
+   polling = true;
+   setTimeout(async () => { polling = false; try { await load(); } catch (error) { showError(error.message); } }, 2000);
+  }
+ }
+ async function run(button, callback) {
+  button.disabled = true; find('error').hidden = true;
+  try { await callback(); } catch (error) { showError(error.message); }
+  finally { button.disabled = button.id === 'register' && !checkedSource; }
+ }
+ find('source').onchange = resetPreview;
+ find('label').oninput = () => { find('register').disabled = !checkedSource || !find('label').value.trim(); };
+ find('reload').onclick = () => run(find('reload'), async () => { resetPreview(); await load(); });
+ find('preview').onclick = () => run(find('preview'), async () => {
+  resetPreview();
+  const source = find('source').value;
+  if (!source) throw new Error('Select a connected database first.');
+  const data = await rpc('preview_source', {data_source:source});
+  const result = find('preview-result'); result.replaceChildren(); result.hidden = false;
+  const heading = document.createElement('p'); heading.textContent = 'Companies found:';
+  const list = document.createElement('ul');
+  for (const company of data.companies) { const item = document.createElement('li'); item.textContent = company.name + ' — ' + company.default_currency; list.append(item); }
+  result.append(heading, list);
+  if (data.existing) {
+   const note = document.createElement('p'); note.textContent = 'Already listed as ' + data.existing.source_label + ' (' + data.existing.status + '). This database will not be counted twice.'; result.append(note);
+  } else {
+   checkedSource = source; find('register').disabled = !find('label').value.trim();
+  }
+ });
+ find('register').onclick = () => run(find('register'), async () => {
+  if (!checkedSource || checkedSource !== find('source').value) throw new Error('Check this source before registering it.');
+  const label = find('label').value.trim();
+  if (!label) throw new Error('Enter a unique display label.');
+  if (!confirm('Register "' + label + '" and include all its companies in CEO dashboard totals?')) return;
+  await rpc('register_source', {data_source:checkedSource, source_label:label});
+  resetPreview(); pollStarted = Date.now(); await load();
+ });
+ load().catch(error => showError(error.message));
+})();
+</script>
+{% endblock %}

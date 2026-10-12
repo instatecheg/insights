@@ -88,7 +88,10 @@ app_include_js = "insights_nudge.bundle.js"
 
 # before_install = "insights.install.before_install"
 after_install = "insights.migrate.after_migrate"
-after_migrate = "insights.migrate.after_migrate"
+after_migrate = [
+    "insights.migrate.after_migrate",
+    "insights.ceo_finance.api.ensure_hourly_sync",
+]
 
 after_request = ["insights.insights.doctype.insights_data_source_v3.insights_data_source_v3.after_request"]
 
@@ -156,7 +159,9 @@ has_permission = {
 doc_events = {
     "User": {
         "on_change": "insights.insights.doctype.insights_team.insights_team.update_admin_team",
-    }
+    },
+    "Insights Query v3": {"validate": "insights.ceo_finance.api.protect_managed_query"},
+    "Insights Data Source v3": {"validate": "insights.ceo_finance.api.protect_registered_database"},
 }
 
 # Scheduled Tasks

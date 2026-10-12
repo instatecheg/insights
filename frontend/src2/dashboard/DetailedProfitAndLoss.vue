@@ -117,7 +117,7 @@ async function run() {
 		const selection = { mode: mode.value, fromYear: fromYear.value, toYear: toYear.value }
 		start.value = filters.start
 		end.value = filters.end
-		const result: Report = await call('ceo_finance.detailed_profit_and_loss.run', {
+		const result: Report = await call('insights.ceo_finance.detailed_profit_and_loss.run', {
 			dashboard_name: dashboard.doc.name, filters,
 		})
 		if (version !== requestVersion) return
@@ -141,7 +141,7 @@ async function loadOptions() {
 	loading.value = true
 	error.value = ''
 	try {
-		const options: Catalog = await call('ceo_finance.detailed_profit_and_loss.get_options', { dashboard_name: dashboard.doc.name })
+		const options: Catalog = await call('insights.ceo_finance.detailed_profit_and_loss.get_options', { dashboard_name: dashboard.doc.name })
 		catalog.value = options
 		for (const dimension of options.dimensions) {
 			if (!dimensions.value[dimension.value]) dimensions.value[dimension.value] = []
@@ -204,7 +204,7 @@ async function drill(row: Row, period: Period) {
 	const version = requestVersion
 	const entryVersion = ++entryRequestVersion
 	try {
-		const result: { rows: Entry[]; truncated: boolean } = await call('ceo_finance.detailed_profit_and_loss.get_entries', {
+		const result: { rows: Entry[]; truncated: boolean } = await call('insights.ceo_finance.detailed_profit_and_loss.get_entries', {
 			dashboard_name: dashboard.doc.name, filters: applied.value,
 			source_name: row.source, company_name: row.company,
 			account: row.account, period_key: period.key,

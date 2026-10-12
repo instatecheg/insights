@@ -1,0 +1,17 @@
+{
+ "doctype": "DocType",
+ "name": "CEO Dashboard Settings",
+ "module": "Insights",
+ "issingle": 1,
+ "field_order": ["dashboard", "combined_query", "template_query", "freshness_query", "technical_dashboard", "profit_and_loss_dashboard"],
+ "fields": [
+  {"fieldname": "dashboard", "label": "CEO Dashboard", "fieldtype": "Link", "options": "Insights Dashboard v3", "reqd": 1},
+  {"fieldname": "combined_query", "label": "Combined Financial Query", "fieldtype": "Link", "options": "Insights Query v3", "reqd": 1},
+  {"fieldname": "template_query", "label": "Company Card Template Query", "fieldtype": "Link", "options": "Insights Query v3", "reqd": 1},
+  {"fieldname": "freshness_query", "label": "Data Freshness Query", "fieldtype": "Link", "options": "Insights Query v3"},
+  {"fieldname": "technical_dashboard", "label": "Technical Dashboard", "fieldtype": "Link", "options": "Insights Dashboard v3", "read_only": 1},
+  {"fieldname": "profit_and_loss_dashboard", "label": "Profit and Loss Dashboard", "fieldtype": "Link", "options": "Insights Dashboard v3", "read_only": 1}
+ ],
+ "permissions": [{"role": "Insights Admin", "read": 1, "write": 1}],
+ "track_changes": 1
+}

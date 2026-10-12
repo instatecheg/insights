@@ -1,0 +1,21 @@
+{
+ "doctype": "DocType",
+ "name": "CEO Company Source",
+ "module": "Insights",
+ "autoname": "hash",
+ "title_field": "source_label",
+ "field_order": ["source_label", "data_source", "database_identity", "status", "companies", "financial_query", "dashboard_items", "registered_on", "message"],
+ "fields": [
+  {"fieldname": "source_label", "label": "Display Label", "fieldtype": "Data", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "data_source", "label": "Insights Data Source", "fieldtype": "Link", "options": "Insights Data Source v3", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "database_identity", "label": "Database Identity", "fieldtype": "Data", "unique": 1, "reqd": 1, "hidden": 1},
+  {"fieldname": "status", "label": "Status", "fieldtype": "Select", "options": "Queued\nImporting\nRegistered\nFailed", "default": "Queued", "read_only": 1, "in_list_view": 1},
+  {"fieldname": "companies", "label": "Companies", "fieldtype": "JSON", "read_only": 1},
+  {"fieldname": "financial_query", "label": "Financial Query", "fieldtype": "Link", "options": "Insights Query v3", "read_only": 1},
+  {"fieldname": "dashboard_items", "label": "Generated Dashboard Items", "fieldtype": "JSON", "read_only": 1, "hidden": 1},
+  {"fieldname": "registered_on", "label": "Registered On", "fieldtype": "Datetime", "read_only": 1},
+  {"fieldname": "message", "label": "Registration Progress", "fieldtype": "Small Text", "read_only": 1}
+ ],
+ "permissions": [{"role": "Insights Admin", "read": 1, "report": 1}],
+ "track_changes": 1
+}

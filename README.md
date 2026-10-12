@@ -138,6 +138,17 @@ Open the site in your browser at `https://subdomain.domain.tld/` and login with 
 
 ## Development Setup
 
+### Abaad CEO customization
+
+The `abaad-ceo-v3` branch integrates CEO company-source registration, live
+multi-company P&L, source refresh, branding and Insights-only Arabic/English
+switching. No separate `ceo_finance` app is required. See the
+[finance module guide](insights/ceo_finance/README.md) for setup, non-destructive
+transfer from the retired add-on, cloud deployment and accounting behavior.
+Deploy this branch from the fork, leaving the upstream tracking branch untouched.
+Merge official `version-3` updates into the customization branch and test on
+staging before releasing.
+
 ### Docker
 
 You need Docker, docker-compose and git setup on your machine. Refer [Docker documentation](https://docs.docker.com/). After that, follow below steps:
