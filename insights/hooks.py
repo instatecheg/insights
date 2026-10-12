@@ -87,6 +87,7 @@ app_include_js = "insights_nudge.bundle.js"
 # ------------
 
 # before_install = "insights.install.before_install"
+before_migrate = "insights.ceo_finance.migrate.rebind_native_site_database"
 after_install = "insights.migrate.after_migrate"
 after_migrate = [
     "insights.migrate.after_migrate",

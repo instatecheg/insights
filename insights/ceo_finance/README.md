@@ -202,6 +202,9 @@ remove the frontend, finance APIs and schema extensions required by these dashbo
    verified TLS and narrowly scoped firewall rules. The native Site DB source
    refers to the destination site's database after migration, not the old local
    site's database; review its company/data before accepting dashboard totals.
+   Before migration imports fixtures, the native Site DB registration is rebound
+   to the current site's database identity. Remote registrations are never
+   rebound by this step and remain protected against connection changes.
 6. Enable the scheduler and long-queue workers. CEO Refresh imports source
    tables; P&L reads live source data. Verify both paths and inspect failed jobs.
 7. Reconcile per-company revenue, expenses and profit against the source
