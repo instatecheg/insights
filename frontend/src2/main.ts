@@ -7,7 +7,7 @@ import App from './App.vue'
 import { registerControllers, registerGlobalComponents } from './globals.ts'
 import './index.css'
 import router from './router.ts'
-import { translationPlugin } from './translation.ts'
+import { initializeTranslations, translationPlugin } from './translation.ts'
 import telemetryPlugin from './telemetry'
 import session from './session.ts'
 
@@ -17,7 +17,6 @@ const app = createApp(App)
 const pinia = createPinia()
 
 app.use(pinia)
-app.use(router)
 app.use(spritePlugin)
 app.component('grid-layout', GridLayout)
 app.component('grid-item', GridItem)
@@ -40,5 +39,17 @@ app.config.errorHandler = (err, vm, info) => {
 registerGlobalComponents(app)
 registerControllers(app)
 
-app.mount('#app')
-app.use(translationPlugin);
+async function mount() {
+	await initializeTranslations()
+	app.use(translationPlugin)
+	app.use(router)
+	app.mount('#app')
+}
+mount().catch(error => {
+	console.error('Unable to initialize Insights language', error)
+	const root = document.getElementById('app')
+	if (root) {
+		root.setAttribute('role', 'alert')
+		root.textContent = `Unable to load Insights language. Reload to retry. ${error instanceof Error ? error.message : String(error)}`
+	}
+})

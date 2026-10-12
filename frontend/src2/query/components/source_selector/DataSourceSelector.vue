@@ -5,6 +5,10 @@ import useDataSourceStore from '../../../data_source/data_source'
 
 const currentSourceName = defineModel()
 const props = defineProps({
+	disabled: {
+		type: Boolean,
+		default: false,
+	},
 	placeholder: {
 		type: String,
 		default: 'Data source',
@@ -26,12 +30,13 @@ const dataSourceOptions = computed(() => {
 <template>
 	<Autocomplete
 		class="!w-fit"
+		:disabled="disabled"
 		:options="dataSourceOptions"
 		:modelValue="currentSourceName"
 		@update:modelValue="currentSourceName = $event?.value || ''"
 	>
 		<template #target="{ togglePopover }">
-			<Button variant="outline" @click="togglePopover">
+			<Button variant="outline" :disabled="disabled" @click="togglePopover">
 				<template #prefix>
 					<Database class="h-3.5 w-3.5 flex-shrink-0" stroke-width="1.5" />
 				</template>

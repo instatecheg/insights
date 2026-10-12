@@ -1,4 +1,5 @@
 import { reactive, ref, toRefs } from 'vue'
+import { call } from 'frappe-ui'
 // @ts-ignore
 import { useTelemetry } from '../telemetry'
 import useChart from '../charts/chart'
@@ -11,6 +12,7 @@ import {
 	wheneverChanges,
 } from '../helpers'
 import useDocumentResource from '../helpers/resource'
+import { __ } from '../translation'
 import { isFilterValid } from '../query/components/filter_utils'
 import { column, filter_group } from '../query/helpers'
 import router from '../router'
@@ -209,17 +211,53 @@ function makeDashboard(name: string) {
 		})
 	}
 
-	function refresh(force = false) {
-		dashboard.doc.items
-			.filter((item) => item.type === 'chart')
-			.forEach((item) => refreshChart(item.chart, force))
+	const refreshing = ref(false)
+	const synchronizing = ref(false)
+	const analysisRefreshVersion = ref(0)
+	async function refresh(force = false) {
+		if (refreshing.value) return
+		refreshing.value = true
+		try {
+			await waitUntil(() => dashboard.isloaded)
+			if (force && dashboard.doc.sync_on_refresh) {
+				synchronizing.value = true
+				const { job_id } = await call('insights.api.dashboard_sync.start_dashboard_sync', {
+					dashboard_name: name,
+				})
+				const deadline = Date.now() + 31 * 60 * 1000
+				while (true) {
+					const { status } = await call('insights.api.dashboard_sync.get_dashboard_sync_status', {
+						dashboard_name: name,
+						job_id,
+					})
+					if (status === 'finished') break
+					if (Date.now() >= deadline) {
+						throw new Error(__('Source synchronization timed out. Check the worker and import logs.'))
+					}
+					await new Promise((resolve) => setTimeout(resolve, 2000))
+				}
+				synchronizing.value = false
+			}
+			await Promise.all(
+				dashboard.doc.items
+					.filter((item) => item.type === 'chart')
+					.map((item) => refreshChart(item.chart, force))
+			)
+			analysisRefreshVersion.value++
+		} catch (error) {
+			showErrorToast(error instanceof Error ? error : new Error(String(error)), false)
+		} finally {
+			synchronizing.value = false
+			refreshing.value = false
+		}
 	}
 
-	function refreshChart(chart_name: string, force = false) {
+	async function refreshChart(chart_name: string, force = false) {
 		const chart = useChart(chart_name)
+		await waitUntil(() => chart.isloaded && chart.dataQuery.isloaded)
 		chart.dataQuery.adhocFilters = getAdhocFilters(chart_name)
 		chart.dataQuery.executionPriority = getLayoutRank(chart_name)
-		chart.refresh(force)
+		return chart.refresh(force)
 	}
 
 	// charts reach the queue in whatever order their docs finish loading, so rank
@@ -280,6 +318,12 @@ function makeDashboard(name: string) {
 			(item) => item.type === 'filter' && item.filter_name === filter_name
 		)
 		if (!filter) return
+
+		const current = filterStates.value[filter_name]
+		if (
+			(!operator && !current) ||
+			(current?.operator === operator && JSON.stringify(current?.value) === JSON.stringify(value))
+		) return
 
 		if (!operator) {
 			delete filterStates.value[filter_name]
@@ -367,7 +411,11 @@ function makeDashboard(name: string) {
 			}
 			return acc
 		}, {} as typeof filterStates.value)
-		Object.assign(filterStates.value, defaultFilters)
+		for (const [filterName, state] of Object.entries(defaultFilters)) {
+			if (!filterStates.value[filterName]) {
+				filterStates.value[filterName] = state
+			}
+		}
 
 		wheneverChanges(
 			() => dashboard.doc.title,
@@ -403,6 +451,9 @@ function makeDashboard(name: string) {
 
 		refresh,
 		refreshChart,
+		refreshing,
+		synchronizing,
+		analysisRefreshVersion,
 
 		getAdhocFilters,
 
@@ -432,6 +483,7 @@ const INITIAL_DOC: InsightsDashboardv3 = {
 	read_only: false,
 	vertical_compact: true,
 	has_workbook_access: false,
+	sync_on_refresh: false,
 }
 
 // Which page this view is on, read off the route the load happens on.

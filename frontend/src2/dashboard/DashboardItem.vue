@@ -11,6 +11,8 @@ import DashboardChart from './DashboardChart.vue'
 import DashboardFilter from './DashboardFilter.vue'
 import DashboardItemActions from './DashboardItemActions.vue'
 import DashboardText from './DashboardText.vue'
+import DetailedProfitAndLoss from './DetailedProfitAndLoss.vue'
+import { direction } from '../translation'
 
 const props = defineProps<{
 	index: number
@@ -21,7 +23,7 @@ const dashboard = inject('dashboard') as Dashboard
 </script>
 
 <template>
-	<div class="group relative flex h-full w-full p-2">
+	<div :dir="direction" class="group relative flex h-full w-full p-2">
 		<div
 			class="flex h-full w-full items-center justify-start"
 			:class="
@@ -44,6 +46,7 @@ const dashboard = inject('dashboard') as Dashboard
 				v-else-if="props.item.type === 'filter'"
 				:item="props.item as WorkbookDashboardFilter"
 			/>
+			<DetailedProfitAndLoss v-else-if="props.item.type === 'financial_report'" />
 		</div>
 		<DashboardItemActions
 			v-if="dashboard.editing"

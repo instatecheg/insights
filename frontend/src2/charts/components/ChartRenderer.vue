@@ -4,6 +4,8 @@ import { Button } from 'frappe-ui'
 import { Maximize, XIcon, RefreshCcw } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { titleCase } from '../../helpers'
+import { column as queryColumn } from '../../query/helpers'
+import { __ } from '../../translation'
 import { FIELDTYPES } from '../../helpers/constants.ts'
 import { EMPTY_RESULT, Query } from '../../query/query'
 import {
@@ -19,6 +21,7 @@ import {
 	AxisChartConfig,
 } from '../../types/chart.types'
 import { Chart } from '../chart'
+import { QueryResultColumn, QueryResultRow } from '../../types/query.types'
 import {
 	getBarChartOptions,
 	getBubbleChartOptions,
@@ -181,8 +184,41 @@ async function onChartElementClick(params: any) {
 	}
 }
 
-async function onNumberChartDrillDown(column: any, row: any) {
+async function onNumberChartDrillDown(column: QueryResultColumn, row: QueryResultRow) {
 	drillDownQuery.value = await props.chart.dataQuery.getDrillDownQuery(column, row)
+	if (drillDownQuery.value && (config.value as NumberChartConfig).finance_account_drilldown) {
+		const query = drillDownQuery.value
+		query.autoExecute = false
+		const metric = (config.value as NumberChartConfig).number_columns.find(
+			(measure) => measure.measure_name === column.name,
+		)
+		if (
+			metric &&
+			'column_name' in metric &&
+			(metric.column_name === 'total_income' || metric.column_name === 'total_expense')
+		) {
+			query.addFilterGroup({
+				logical_operator: 'And',
+				filters: [{
+					column: queryColumn('account_type'),
+					operator: '=',
+					value: metric.column_name === 'total_income' ? 'Income' : 'Expense',
+				}],
+			})
+		}
+		query.doc.title = `${__(column.name)} - ${__('Account Breakdown - double-click an amount for GL entries')}`
+		query.addSummarize({
+			dimensions: ['company_label', 'account', 'account_type'].map((name) => ({
+				column_name: name, dimension_name: name, data_type: 'String',
+			})),
+			measures: [
+				{ column_name: 'total_income', measure_name: 'Revenue', data_type: 'Decimal', aggregation: 'sum', format: 'currency', currency_column: 'currency' },
+				{ column_name: 'total_expense', measure_name: 'Expenses', data_type: 'Decimal', aggregation: 'sum', format: 'currency', currency_column: 'currency' },
+				{ column_name: 'net_profit', measure_name: 'Net Profit', data_type: 'Decimal', aggregation: 'sum', format: 'currency', currency_column: 'currency' },
+			],
+		})
+		query.autoExecute = true
+	}
 	if (drillDownQuery.value) {
 		showDrillDown.value = true
 	}

@@ -48,7 +48,31 @@ Building custom apps or creating structured data has been very easy with Frappe 
 - **Database Support**: Frappe Insights currently supports MySQL, PostgreSQL, DuckDB, and BigQuery databases. More database integrations are planned for the future.
 
 
+### Synchronize sources when refreshing a dashboard
+
+Enable **Synchronize Sources on Refresh** on an Insights Dashboard v3 to make
+manual **Refresh** (including **Force Refresh** in the workbook) import its stored
+source tables before re-running charts. This option is off by default and requires
+Insights Admin access and a running `long` queue worker. Opening a dashboard and
+changing filters do not trigger imports; live-connection charts continue to read
+their sources directly.
+
+The button displays **Synchronizing sources...** while it waits. Tables are
+discovered through the charts' query dependencies and imported once per refresh,
+including tables referenced by native SQL. Charts are force-refreshed only after
+all imports complete. If an import fails, an error is shown instead of refreshing
+charts from a partially updated snapshot; inspect the Error Log and Data Store
+import logs before retrying. REST API sources require their existing import jobs
+and are not supported by this option.
+
 ### Under the Hood
+
+Financial native SQL queries can optionally bind **Locked Data Source** in the
+Insights Query v3 document. Saving or executing a query against another source is
+then rejected, and its source selector is disabled. Insights Admins can deliberately
+clear the binding before reconfiguring the query. Existing unbound queries are
+unchanged. Bind each company's query to its actual source before combining them,
+so a label such as "Local" cannot accidentally disguise rows from another site.
 
 - [**Frappe Framework**](https://github.com/frappe/frappe): A full-stack web application framework.
 

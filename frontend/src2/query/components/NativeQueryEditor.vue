@@ -126,7 +126,14 @@ useShortcut('Meta+e', () => {
 		<div class="relative flex h-full flex-1 flex-col gap-3 overflow-hidden p-4">
 			<!-- Toolbar -->
 			<QueryToolbar :on-execute="() => execute(true)" :extra-actions="extraActions">
-				<DataSourceSelector v-model="data_source" placeholder="Select a data source" />
+				<DataSourceSelector
+					v-model="data_source"
+					:disabled="Boolean(query.doc.locked_data_source)"
+					placeholder="Select a data source"
+				/>
+				<span v-if="query.doc.locked_data_source" class="text-xs text-gray-600">
+					{{ __('Source locked for company comparison') }}
+				</span>
 			</QueryToolbar>
 
 			<!-- SQL Editor -->

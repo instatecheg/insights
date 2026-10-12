@@ -33,6 +33,7 @@ export type WorkbookQuery = {
 	folder?: string | null
 	sort_order: number
 	is_native_query?: boolean
+	locked_data_source?: string | null
 	is_script_query?: boolean
 	is_builder_query?: boolean
 }
@@ -107,6 +108,8 @@ export type InsightsDashboardv3 = {
 	name: string
 	owner: string
 	title: string
+	brand_name?: string
+	brand_logo?: string
 	workbook: string
 	items: WorkbookDashboardItem[]
 	preview_image?: string
@@ -121,12 +124,19 @@ export type InsightsDashboardv3 = {
 	read_only: boolean
 	vertical_compact: boolean
 	has_workbook_access: boolean
+	sync_on_refresh: boolean
 }
 
 export type WorkbookDashboardItem =
 	| WorkbookDashboardChart
 	| WorkbookDashboardText
 	| WorkbookDashboardFilter
+	| WorkbookDashboardFinancialReport
+
+export type WorkbookDashboardFinancialReport = {
+	type: 'financial_report'
+	layout: Layout
+}
 
 export type Layout = {
 	i: string
@@ -141,6 +151,8 @@ export type WorkbookDashboardChart = {
 	layout: Layout
 }
 export type WorkbookDashboardFilter = {
+	finance_period?: boolean
+	values_query?: string
 	type: 'filter'
 	filter_name: string
 	filter_type: FilterType

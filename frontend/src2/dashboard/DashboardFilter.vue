@@ -9,6 +9,8 @@ import { WorkbookDashboardFilter } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
 import DashboardFilterEditor from './DashboardFilterEditor.vue'
 import Filter from './Filter.vue'
+import FinancePeriodFilter from './FinancePeriodFilter.vue'
+import { __ } from '../translation'
 
 const dashboard = inject<Dashboard>('dashboard')!
 const props = defineProps<{ item: WorkbookDashboardFilter }>()
@@ -29,14 +31,15 @@ const sourceColumn = computed(() => {
 	const firstChart = Object.keys(filter.links)[0]
 	if (!firstChart) return
 	const linkedColumn = filter.links[firstChart]
-	return dashboard.getColumnFromFilterLink(linkedColumn)
+	const linked = dashboard.getColumnFromFilterLink(linkedColumn)
+	return linked && { ...linked, query: filter.values_query || linked.query }
 })
 
 function stringValuesProvider(search: string) {
 	if (!sourceColumn.value) return Promise.resolve([])
 
 	const firstLinkedChart = Object.keys(filter.links)?.[0]
-	const adhocFilters = firstLinkedChart
+	const adhocFilters = firstLinkedChart && !filter.values_query
 		? dashboard.getAdhocFilters(firstLinkedChart, filter.filter_name)
 		: undefined
 
@@ -49,6 +52,18 @@ function stringValuesProvider(search: string) {
 }
 
 const filterState = reactive(copy(dashboard.filterStates[filter.filter_name] || {}))
+
+watch(
+	() => dashboard.filterStates[filter.filter_name],
+	(state) => {
+		const next = state || {}
+		if (JSON.stringify(filterState) === JSON.stringify(next)) return
+		delete filterState.operator
+		delete filterState.value
+		Object.assign(filterState, copy(next))
+	},
+	{ deep: true },
+)
 
 // no `immediate` — on mount, filterState must keep the restored state from dashboard.filterStates
 watch(
@@ -71,19 +86,20 @@ wheneverChanges(
 )
 
 const label = computed(() => {
-	let _label = filter.filter_name
+	let _label = __(filter.filter_name)
 	if (filterState.operator && filterState.value) {
 		const value_str = Array.isArray(filterState.value)
 			? filterState.value.join(', ')
 			: filterState.value
-		_label += ` ${filterState.operator} ${value_str}`
+		_label += ` ${__(filterState.operator)} ${value_str}`
 	}
 	return _label
 })
 </script>
 
 <template>
-	<div class="h-8 w-full [&>div:first-child]:h-full">
+	<FinancePeriodFilter v-if="filter.finance_period" :item="filter" />
+	<div v-else class="h-8 w-full [&>div:first-child]:h-full">
 		<Popover class="h-full">
 			<template #target="{ togglePopover }">
 				<Button

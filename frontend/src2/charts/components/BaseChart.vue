@@ -3,6 +3,7 @@ import * as echarts from 'echarts'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { wheneverChanges } from '../../helpers'
 import ChartTitle from './ChartTitle.vue'
+import { __ } from '../../translation'
 
 const props = defineProps({
 	title: { type: String, required: false },
@@ -32,7 +33,9 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
-	if (chartRef.value && resizeObserver) resizeObserver.unobserve(chartRef.value)
+	resizeObserver?.disconnect()
+	eChart?.dispose()
+	eChart = null
 })
 
 wheneverChanges(() => props.options, setChartOptions, { deep: true })
@@ -44,7 +47,12 @@ async function setChartOptions() {
 	if (isMap) {
 		await registerMap(series.map)
 	}
-	eChart.setOption({ ...props.options })
+	const legends = props.options.legend
+	const translateLegend = legend => ({ formatter: name => __(name), ...legend })
+	eChart.setOption({
+		...props.options,
+		legend: Array.isArray(legends) ? legends.map(translateLegend) : legends ? translateLegend(legends) : legends,
+	})
 }
 
 async function registerMap(mapName) {
@@ -81,7 +89,7 @@ function downloadChart() {
 <template>
 	<div class="flex h-full w-full flex-col rounded">
 		<ChartTitle v-if="title" :title="title" />
-		<div ref="chartRef" class="w-full flex-1 overflow-hidden">
+		<div ref="chartRef" dir="ltr" class="w-full flex-1 overflow-hidden">
 			<slot></slot>
 		</div>
 	</div>

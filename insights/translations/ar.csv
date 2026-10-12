@@ -1,0 +1,198 @@
+Main Consolidated Dashboard,لوحة الإدارة التنفيذية المجمعة
+Profit and Loss - All Companies,الأرباح والخسائر - جميع الشركات
+Finance Technical - Sync and Journals,اللوحة الفنية المالية - المزامنة والقيود
+Dashboards,لوحات المعلومات
+Workbooks,دفاتر التحليل
+Data Sources,مصادر البيانات
+Data Store,مخزن البيانات
+Settings,الإعدادات
+Refresh,تحديث
+Synchronizing sources...,جارٍ مزامنة المصادر...
+Expand,توسيع
+Collapse,طي
+Try demo data,جرّب البيانات التجريبية
+Explore with sample data and pre-built dashboards,استكشف باستخدام بيانات نموذجية ولوحات جاهزة
+Setup Demo Data,إعداد البيانات التجريبية
+Export as PNG,تصدير كصورة PNG
+Open Workbook,فتح دفتر التحليل
+Language applies to Insights only,تغيير اللغة خاص بتطبيق Insights فقط
+Detailed Profit and Loss,تفاصيل الأرباح والخسائر
+Company,الشركة
+Source,المصدر
+Company / Account,الشركة / الحساب
+Income,الإيرادات
+Expense,المصروفات
+Expenses,المصروفات
+Revenue,الإيرادات
+Net Profit,صافي الربح
+Net Profit/Loss,صافي الربح / الخسارة
+Profit Margin,هامش الربح
+SAR,ر.س
+Total,الإجمالي
+All companies,جميع الشركات
+All companies (main filters),جميع الشركات (حسب الفلاتر الرئيسية)
+Applied companies:,الشركات المختارة:
+Filter Based On,أساس التصفية
+Current YTD,من بداية السنة حتى اليوم
+Fiscal Year,السنة المالية
+Date Range,نطاق التاريخ
+Start Year,السنة الأولى
+End Year,السنة الأخيرة
+Select fiscal year,اختر السنة المالية
+Start Date,تاريخ البداية
+End Date,تاريخ النهاية
+Periodicity,دورية العرض
+Monthly,شهري
+Quarterly,ربع سنوي
+Half-Yearly,نصف سنوي
+Yearly,سنوي
+Select View,طريقة العرض
+Report,التقرير
+Growth,النمو
+Margin,الهامش
+Currency,العملة
+Finance Book,الدفتر المالي
+Cost Center,مركز التكلفة
+Project,المشروع
+Branch,الفرع
+Shareholder,المساهم
+Local | Shareholder,المحلي | المساهم
+Mos Star | Branch,Mos Star | الفرع
+Company default / unassigned,الدفتر الافتراضي للشركة / غير معيّن
+All / unfiltered,الكل / دون تصفية
+Search,بحث
+Clear,مسح
+Done,تم
+No options available,لا توجد خيارات متاحة
+Clear selections,مسح الاختيارات
+Done selecting,تم الاختيار
+Run query,تشغيل الاستعلام
+company_label,الشركة
+account,الحساب
+account_type,نوع الحساب
+posting_date,تاريخ القيد
+voucher_type,نوع المستند
+voucher_no,رقم المستند
+gl_entry,قيد دفتر الأستاذ
+debit,مدين
+credit,دائن
+currency,العملة
+cost_center,مركز التكلفة
+project,المشروع
+Summarize,تلخيص
+Operations,العمليات
+Add Operation,إضافة عملية
+table,جدول
+query,استعلام
+by,حسب
+Fetched in {0}s,تم جلب البيانات خلال {0} ثانية
+Fetched from cache,تم جلب البيانات من الذاكرة المؤقتة
+Financial GL - Local,دفتر الأستاذ المالي - Local
+Financial GL - Arena,دفتر الأستاذ المالي - Arena
+Financial GL - Mos Star,دفتر الأستاذ المالي - Mos Star
+source_site,قاعدة البيانات المصدر
+company,اسم الشركة
+report_year,سنة التقرير
+month_start,بداية الشهر
+total_income,إجمالي الإيرادات
+total_expense,إجمالي المصروفات
+net_profit,صافي الربح
+Accumulated Values,القيم التراكمية
+Include Default FB Entries,تضمين قيود الدفتر المالي الافتراضي
+Show zero values,إظهار القيم الصفرية
+Apply P&L Filters,تطبيق فلاتر الأرباح والخسائر
+Reload P&L Options,إعادة تحميل خيارات التقرير
+Reset All Filters,إعادة تعيين جميع الفلاتر
+Clear Advanced Filters,مسح الفلاتر المتقدمة
+Loading live P&L data...,جارٍ تحميل بيانات الأرباح والخسائر المباشرة...
+Applied period:,الفترة المطبقة:
+to,إلى
+Live data updated:,آخر تحديث للبيانات المباشرة:
+No data,لا توجد بيانات
+No data for these filters,لا توجد بيانات مطابقة لهذه الفلاتر
+N/A,غير متاح
+Company Profit and Loss,الأرباح والخسائر حسب الشركة
+Chart company,الشركة في الرسم
+Company profitability comparison,مقارنة ربحية الشركات
+Revenue vs Expenses - Selected Companies,الإيرادات مقابل المصروفات - الشركات المختارة
+Net Profit by Company - Selected Periods,صافي الربح حسب الشركة - الفترات المختارة
+Net Profit Comparison - Selected Companies,مقارنة صافي الربح - الشركات المختارة
+P&L accounts,حسابات الأرباح والخسائر
+Close GL detail,إغلاق تفاصيل دفتر الأستاذ
+Loading entries...,جارٍ تحميل القيود...
+Date,التاريخ
+Account,الحساب
+Voucher,المستند
+Debit,مدين
+Credit,دائن
+Cost Center / Project / Book,مركز التكلفة / المشروع / الدفتر
+GL Entry,قيد دفتر الأستاذ
+Journal Entry,قيد يومية
+Reporting Period,الفترة المالية
+Period mode,نمط الفترة
+Year / month,السنة / الشهر
+Custom period,فترة مخصصة
+Reporting year,سنة التقرير
+Reporting month,شهر التقرير
+Period start,بداية الفترة
+Period end,نهاية الفترة
+All months,جميع الأشهر
+Apply,تطبيق
+Applied:,المطبق:
+Choose a valid start and end date,اختر تاريخ بداية ونهاية صالحين
+Choose a valid start and end fiscal year/date.,اختر سنة مالية أو تاريخ بداية ونهاية صالحين.
+in,ضمن
+not in,ليس ضمن
+contains,يحتوي على
+Operator,المعامل
+Value,القيمة
+CEO Financial Overview,نظرة مالية للإدارة التنفيذية
+Company Sources,مصادر الشركات
+Technical Dashboard - sync and journals,اللوحة الفنية - المزامنة والقيود
+"Detailed Profit and Loss - filters, accounts and GL",تفاصيل الأرباح والخسائر - الفلاتر والحسابات ودفتر الأستاذ
+Company Comparison,مقارنة الشركات
+Separate Company Summaries,ملخصات الشركات المنفصلة
+All Companies - Revenue Selected Period,جميع الشركات - إيرادات الفترة المختارة
+All Companies - Expenses Selected Period,جميع الشركات - مصروفات الفترة المختارة
+All Companies - Net Profit Selected Period,جميع الشركات - صافي ربح الفترة المختارة
+All Companies - Profit Margin Selected Period,جميع الشركات - هامش ربح الفترة المختارة
+Revenue vs Expenses - All Companies Selected Period,الإيرادات مقابل المصروفات - جميع الشركات للفترة المختارة
+Net Profit by Company - Monthly Selected Period,صافي الربح حسب الشركة - شهري للفترة المختارة
+Company Profitability - Selected Period (SAR),ربحية الشركات - الفترة المختارة (ر.س)
+Net Profit Comparison - Companies Selected Period,مقارنة صافي الربح - الشركات للفترة المختارة
+Local - Revenue Selected Period,المحلي - إيرادات الفترة المختارة
+Local - Expenses Selected Period,المحلي - مصروفات الفترة المختارة
+Local - Net Profit Selected Period,المحلي - صافي ربح الفترة المختارة
+Local - Profit Margin Selected Period,المحلي - هامش ربح الفترة المختارة
+Net Profit Trend - Local Selected Period,اتجاه صافي الربح - المحلي للفترة المختارة
+Arena - Revenue Selected Period,Arena - إيرادات الفترة المختارة
+Arena - Expenses Selected Period,Arena - مصروفات الفترة المختارة
+Arena - Net Profit Selected Period,Arena - صافي ربح الفترة المختارة
+Arena - Profit Margin Selected Period,Arena - هامش ربح الفترة المختارة
+Net Profit Trend - Arena Selected Period,اتجاه صافي الربح - Arena للفترة المختارة
+Mos Star - Revenue Selected Period,Mos Star - إيرادات الفترة المختارة
+Mos Star - Expenses Selected Period,Mos Star - مصروفات الفترة المختارة
+Mos Star - Net Profit Selected Period,Mos Star - صافي ربح الفترة المختارة
+Mos Star - Profit Margin Selected Period,Mos Star - هامش ربح الفترة المختارة
+Net Profit Trend - Mos Star Selected Period,اتجاه صافي الربح - Mos Star للفترة المختارة
+Mos Star - SAR,Mos Star - ر.س
+Local - شركة مدار الشرق للإستشارات الهندسية مهنية,المحلي - شركة مدار الشرق للإستشارات الهندسية مهنية
+"Live Profit and Loss across registered sources. Select companies and reporting dates here, then Apply. Filters are independent of the CEO dashboard. SAR; no intercompany eliminations.","بيانات أرباح وخسائر مباشرة من المصادر المسجلة. اختر الشركات وفترة التقرير ثم طبّق الفلاتر. هذه الفلاتر مستقلة عن لوحة الإدارة التنفيذية. العملة ر.س؛ دون استبعاد المعاملات بين الشركات."
+Source-qualified filters prevent mixing same-named projects/books. Cost Center includes descendants. Empty Finance Book uses each company default book plus unassigned entries when Include Default FB Entries is checked. Custom report templates are excluded.,الفلاتر محددة حسب المصدر لمنع خلط المشاريع والدفاتر المتشابهة في الاسم. يشمل مركز التكلفة المراكز التابعة. عند عدم اختيار دفتر مالي يُستخدم دفتر الشركة الافتراضي مع القيود غير المعيّنة إذا كان خيار التضمين مفعّلاً. قوالب التقارير المخصصة غير مشمولة.
+Accumulated summaries use the last column; running values reset on each source fiscal year.,تعتمد الملخصات التراكمية على العمود الأخير؛ وتُعاد القيم التراكمية مع بداية السنة المالية لكل مصدر.
+No posted Income/Expense entries match these filters. Reset All Filters or choose another company/period.,لا توجد قيود إيرادات أو مصروفات مرحّلة تطابق هذه الفلاتر. أعد تعيين الفلاتر أو اختر شركة أو فترة أخرى.
+Period breakdown for the selected company,تفصيل الفترات للشركة المختارة
+"Income, Expense and Net Profit/Loss for each company in the main filters. Totals cover the applied period.",إيرادات ومصروفات وصافي ربح أو خسارة كل شركة ضمن الفلاتر الرئيسية. الإجماليات تخص الفترة المطبقة.
+Income Expense Net Profit by period,الإيرادات والمصروفات وصافي الربح حسب الفترة
+Income Expense Net Profit by company,الإيرادات والمصروفات وصافي الربح حسب الشركة
+"All charts and comparisons follow the applied P&L filters and periodicity. Values are SAR, including in Growth/Margin table view. Accumulated charts show running balances; totals use the final period. Negative profit appears below zero.",تتبع الرسوم والمقارنات فلاتر الأرباح والخسائر والدورية المطبقة. القيم بالريال السعودي حتى في عرض النمو أو الهامش. تُظهر الرسوم التراكمية الأرصدة المتراكمة وتعتمد الإجماليات على الفترة الأخيرة. تظهر الخسائر أسفل الصفر.
+Click an account amount for matching GL entries and voucher references. Parent rows include children; do not sum parent and child rows together. Growth shows ERPNext period-over-period growth; the first column stays an amount. Margin is relative to each company income.,اضغط على مبلغ الحساب لعرض القيود والمستندات المطابقة. تشمل الحسابات الرئيسية الحسابات التابعة؛ فلا تجمع المستويين معاً. يعرض النمو التغير بين الفترات ويبقى العمود الأول مبلغاً. يُحسب الهامش نسبةً إلى إيرادات الشركة.
+"Click a company name to show its accounts, then click a parent account name to show its children. Click again to collapse.",اضغط اسم الشركة لعرض حساباتها ثم اضغط الحساب الرئيسي لعرض الحسابات التابعة. اضغط مرة أخرى للطي.
+"Showing the first 1,000 entries. Narrow the period to see the rest.",تُعرض أول 1000 قيد. قلّص الفترة لعرض بقية القيود.
+"SAR | Select a company and a year/month or custom period. Click cards for an account breakdown, then amounts for GL entries and voucher references. Refresh synchronizes sources before recalculating. No intercompany eliminations.",ر.س | اختر الشركة والسنة أو الشهر أو فترة مخصصة. اضغط البطاقات لعرض الحسابات ثم المبالغ لعرض القيود والمستندات. يزامن التحديث المصادر قبل إعادة الحساب. لا تُستبعد المعاملات بين الشركات.
+"The same selected period applies to every company. Margin is weighted: net profit / revenue, not an average of monthly percentages.",تُطبق الفترة المختارة نفسها على كل شركة. الهامش موزون: صافي الربح ÷ الإيرادات وليس متوسط النسب الشهرية.
+"Company and Reporting Period below are the same dashboard filters as above. They apply to all cards, trends and drill-downs. Excluded companies show No data.",فلاتر الشركة والفترة أدناه هي نفسها الفلاتر أعلاه. تُطبق على جميع البطاقات والاتجاهات والتفاصيل. تظهر الشركات المستبعدة دون بيانات.
+"Posted Income/Expense GL only. Cancelled entries, opening balances and closing transfers are excluded. Reporting period applies to every financial chart. Margin = net profit / revenue; an undefined margin means zero revenue.",تُعرض قيود الإيرادات والمصروفات المرحّلة فقط. تُستبعد القيود الملغاة والأرصدة الافتتاحية وتحويلات الإقفال. تُطبق الفترة على جميع الرسوم. الهامش = صافي الربح ÷ الإيرادات؛ وعدم توفره يعني إيرادات صفرية.
+Account Breakdown - double-click an amount for GL entries,تفصيل الحسابات - انقر المبلغ مرتين لعرض القيود
+Holding company logo,شعار الشركة القابضة
+Unable to load the company logo. Check the dashboard Brand Logo attachment.,تعذر تحميل شعار الشركة. تحقق من مرفق الشعار في إعدادات اللوحة.

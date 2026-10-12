@@ -81,7 +81,9 @@ async function downloadDashboardImage() {
 						v-if="!dashboard.editing"
 						variant="outline"
 						@click="() => dashboard.refresh(true)"
-						label="Refresh"
+						:label="dashboard.synchronizing ? __('Synchronizing sources...') : __('Refresh')"
+						:loading="dashboard.refreshing"
+						:disabled="dashboard.refreshing"
 					>
 						<template #prefix>
 							<RefreshCcw class="h-4 w-4 text-gray-700" stroke-width="1.5" />

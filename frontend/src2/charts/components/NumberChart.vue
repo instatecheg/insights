@@ -5,6 +5,7 @@ import { getRowCurrency } from '../../query/helpers'
 import { NumberChartConfig, NumberColumnOptions } from '../../types/chart.types'
 import { DataFormat, QueryResult, QueryResultColumn, QueryResultRow } from '../../types/query.types'
 import Sparkline from './Sparkline.vue'
+import { __ } from '../../translation'
 
 const props = defineProps<{
 	config: NumberChartConfig
@@ -43,6 +44,8 @@ const cards = computed(() => {
 	return numberColumns.value.map((measure_name: string, idx: number) => {
 		const numberValues = numberValuesPerColumn.value[measure_name]
 		const currentValue = numberValues[numberValues.length - 1] || 0
+		const unavailable = config.value.finance_account_drilldown &&
+			numberValues[numberValues.length - 1] == null
 		const previousValue = numberValues[numberValues.length - 2] || 0
 		const delta = config.value.negative_is_better
 			? previousValue - currentValue
@@ -66,13 +69,13 @@ const cards = computed(() => {
 		return {
 			measure_name,
 			values: numberValues,
-			currentValue: getFormattedValue(currentValue, decimal, shorten_numbers, format),
+			currentValue: unavailable ? __('No data') : getFormattedValue(currentValue, decimal, shorten_numbers, format),
 			previousValue: getFormattedValue(previousValue, decimal, shorten_numbers, format),
 			delta,
 			// percentDelta is already a percentage change, so it keeps the default format
 			percentDelta: getFormattedValue(percentDelta, decimal, shorten_numbers),
-			prefix,
-			suffix,
+			prefix: unavailable ? '' : prefix,
+			suffix: unavailable ? '' : suffix,
 			color,
 		}
 	})
@@ -126,13 +129,15 @@ function onDoubleClick(measure_name: string) {
 				:key="measure_name"
 				class="flex max-h-[140px] items-center gap-2 overflow-hidden rounded bg-white px-6 pt-5 shadow cursor-pointer"
 				:class="config.comparison ? 'pb-6' : 'pb-3'"
-				@dblclick="onDoubleClick(measure_name)"
+				@click="config.finance_account_drilldown && onDoubleClick(measure_name)"
+				@dblclick="!config.finance_account_drilldown && onDoubleClick(measure_name)"
 			>
 				<div class="flex w-full flex-col">
 					<span class="truncate text-sm font-medium">
-						{{ measure_name }}
+						{{ __(measure_name) }}
 					</span>
 					<div
+						dir="ltr"
 						class="flex-1 flex-shrink-0 truncate text-[24px] font-semibold leading-10"
 						:style="color && typeof color === 'string' ? { color: color } : {}"
 					>

@@ -66,7 +66,7 @@ function handleExecute() {
 		<slot />
 		<div class="flex items-center gap-2">
 			<Tooltip :text="__('Execute ({0})', formatShortcut('Meta+E'))">
-				<Button variant="outline" :label="__('Execute')" @click="handleExecute">
+				<Button variant="outline" :label="__('Run query')" @click="handleExecute">
 					<template #prefix>
 						<PlayIcon class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
 					</template>

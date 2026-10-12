@@ -63,3 +63,45 @@ body {
 .lucide {
 	stroke-width: 1.5;
 }
+
+html[dir='rtl'] .financial-report .text-left,
+html[dir='rtl'] .financial-charts .text-left {
+	text-align: right;
+}
+
+html[dir='rtl'] .financial-report select,
+html[dir='rtl'] select[aria-label='Insights language'] {
+	background-position: left 0.5rem center !important;
+	padding-left: 2rem !important;
+	padding-right: 0.5rem !important;
+}
+
+html[dir='rtl'] .financial-report .absolute.left-0 {
+	left: auto;
+	right: 0;
+}
+
+html[dir='rtl'] .financial-report .mr-2 {
+	margin-right: 0;
+	margin-left: 0.5rem;
+}
+
+.financial-report td.whitespace-nowrap,
+.financial-report tfoot td:not(:first-child) {
+	direction: ltr;
+	unicode-bidi: isolate;
+}
+
+html[dir='rtl'] .insights-data-table .sticky.left-0 {
+	left: auto;
+	right: 0;
+}
+
+html[dir='rtl'] .insights-data-table .text-left {
+	text-align: right;
+}
+
+html[dir='rtl'] .tnum {
+	direction: ltr;
+	unicode-bidi: isolate;
+}

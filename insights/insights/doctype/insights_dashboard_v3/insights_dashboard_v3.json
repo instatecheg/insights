@@ -5,6 +5,8 @@
  "engine": "InnoDB",
  "field_order": [
   "title",
+  "brand_name",
+  "brand_logo",
   "preview_image",
   "share_link",
   "column_break_owsx",
@@ -12,6 +14,7 @@
   "is_public",
   "permission_user",
   "vertical_compact_layout",
+  "sync_on_refresh",
   "section_break_lgpd",
   "items",
   "section_break_aocd",
@@ -19,6 +22,16 @@
   "old_name"
  ],
  "fields": [
+  {
+   "fieldname": "brand_name",
+   "fieldtype": "Data",
+   "label": "Brand Name"
+  },
+  {
+   "fieldname": "brand_logo",
+   "fieldtype": "Attach Image",
+   "label": "Brand Logo"
+  },
   {
    "fieldname": "title",
    "fieldtype": "Data",
@@ -56,6 +69,13 @@
    "fieldname": "share_link",
    "fieldtype": "Data",
    "label": "Share Link"
+  },
+  {
+   "default": "0",
+   "description": "For Insights Admins, synchronize stored source tables before manually refreshing charts. Requires a long queue worker.",
+   "fieldname": "sync_on_refresh",
+   "fieldtype": "Check",
+   "label": "Synchronize Sources on Refresh"
   },
   {
    "default": "0",

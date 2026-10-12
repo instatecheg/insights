@@ -12,6 +12,7 @@ import {
 import NumberFilterPicker from '../query/components/NumberFilterPicker.vue'
 import RelativeDatePicker from '../query/components/RelativeDatePicker.vue'
 import { FilterOperator, FilterValue } from '../types/query.types'
+import { __ } from '../translation'
 
 const props = defineProps<{
 	filterType: FilterType
@@ -77,7 +78,7 @@ const dateRangeVal = computed({
 			<div id="operator" class="!min-w-[200px] flex-1">
 				<FormControl
 					type="select"
-					placeholder="Operator"
+					:placeholder="__('Operator')"
 					:modelValue="state.operator"
 					:options="operatorOptions"
 					@update:modelValue="onOperatorChange($event)"
@@ -105,7 +106,7 @@ const dateRangeVal = computed({
 				<FormControl
 					v-else-if="valueSelectorType === 'text'"
 					v-model="state.value as string"
-					placeholder="Value"
+					:placeholder="__('Value')"
 					autocomplete="off"
 				/>
 			</div>

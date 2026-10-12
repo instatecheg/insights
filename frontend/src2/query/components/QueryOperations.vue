@@ -22,6 +22,7 @@ import { query_operation_types } from '../helpers'
 import { Query } from '../query'
 import AddOperationPopover from './AddOperationPopover.vue'
 import useQuery from '../query.ts'
+import { __ } from '../../translation'
 
 const query = inject('query') as Query
 const operations = computed(() => {
@@ -56,9 +57,9 @@ const SourceInfo = (props: any) => {
 
 	return (
 		<div class="flex items-baseline gap-1 text-gray-700">
-			<p>Select</p>
-			<Element>{source_name}</Element>
-			<p>{is_table ? 'table' : 'query'}</p>
+			<p>{__('Select')}</p>
+			<Element>{__(source_name)}</Element>
+			<p>{__(is_table ? 'table' : 'query')}</p>
 		</div>
 	)
 }
@@ -161,9 +162,9 @@ const FilterInfo = (props: any) => {
 
 	return (
 		<div class="flex flex-wrap items-baseline gap-1 text-gray-700">
-			<p>Filter</p>
+			<p>{__('Filter')}</p>
 			{filtered_columns.map((column, idx) => (
-				<Element>{column}</Element>
+				<Element>{__(column)}</Element>
 			))}
 			{custom_expressions.map((expression, idx) => (
 				<Element>expression</Element>
@@ -191,13 +192,13 @@ const SummarizeInfo = (props: any) => {
 
 	return (
 		<div class="flex flex-wrap items-baseline gap-1 text-gray-700">
-			<p>Summarize</p>
+			<p>{__('Summarize')}</p>
 			{measures.map((measure, idx) => (
-				<Element>{measure.measure_name}</Element>
+				<Element>{__(measure.measure_name)}</Element>
 			))}
-			<p>by</p>
+			<p>{__('by')}</p>
 			{dimensions.map((dimension, idx) => (
-				<Element>{dimension.column_name}</Element>
+				<Element>{__(dimension.column_name)}</Element>
 			))}
 		</div>
 	)
@@ -270,7 +271,7 @@ const CustomOperationInfo = (props: any) => {
 	<div v-if="query.doc.operations.length" class="flex w-full flex-col px-3.5 py-3">
 		<div class="mb-2 flex h-6 items-center justify-between">
 			<div class="flex items-center gap-1">
-				<div class="text-sm font-medium">Operations</div>
+				<div class="text-sm font-medium">{{ __('Operations') }}</div>
 			</div>
 			<div></div>
 		</div>

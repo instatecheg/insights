@@ -38,6 +38,7 @@ class InsightsDashboardv3(Document):
         permission_user: DF.Link | None
         preview_image: DF.Data | None
         share_link: DF.Data | None
+        sync_on_refresh: DF.Check
         title: DF.Data | None
         vertical_compact_layout: DF.Check
         workbook: DF.Link
@@ -165,6 +166,13 @@ class InsightsDashboardv3(Document):
             for linked_column in item.get("links", {}).values():
                 match = re.match(pattern, linked_column)
                 if match and match.groups() == (query, column_name):
+                    return True
+                if (
+                    match
+                    and item.get("finance_period")
+                    and column_name == "report_year"
+                    and match.groups() == (query, "posting_date")
+                ):
                     return True
         return False
 

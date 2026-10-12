@@ -13,6 +13,7 @@
   "is_script_query",
   "is_builder_query",
   "is_native_query",
+  "locked_data_source",
   "section_break_cuka",
   "operations",
   "variables",
@@ -20,6 +21,14 @@
   "old_name"
  ],
  "fields": [
+  {
+   "description": "Optional source binding for financial queries. A bound query must remain a native SQL query on this source. Clear deliberately before changing its source.",
+   "fieldname": "locked_data_source",
+   "fieldtype": "Link",
+   "label": "Locked Data Source",
+   "options": "Insights Data Source v3",
+   "permlevel": 1
+  },
   {
    "fieldname": "title",
    "fieldtype": "Data",
@@ -120,6 +129,17 @@
  "name": "Insights Query v3",
  "owner": "Administrator",
  "permissions": [
+  {
+   "permlevel": 1,
+   "read": 1,
+   "role": "Insights User"
+  },
+  {
+   "permlevel": 1,
+   "read": 1,
+   "write": 1,
+   "role": "Insights Admin"
+  },
   {
    "create": 1,
    "delete": 1,

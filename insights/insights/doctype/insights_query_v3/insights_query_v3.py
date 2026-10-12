@@ -52,6 +52,7 @@ class InsightsQueryv3(Document):
         is_builder_query: DF.Check
         is_native_query: DF.Check
         is_script_query: DF.Check
+        locked_data_source: DF.Link | None
         old_name: DF.Data | None
         operations: DF.JSON | None
         sort_order: DF.Int
@@ -84,8 +85,26 @@ class InsightsQueryv3(Document):
             self.cleanup_empty_folder(self.folder)
 
     def validate(self):
+        self._validate_locked_data_source()
         self._validate_no_circular_dependency()
         self._validate_referenced_queries()
+
+    def _validate_locked_data_source(self):
+        if not self.locked_data_source:
+            return
+        operations = frappe.parse_json(self.operations) or []
+        if (
+            not self.is_native_query
+            or len(operations) != 1
+            or operations[0].get("type") != "sql"
+            or operations[0].get("data_source") != self.locked_data_source
+        ):
+            frappe.throw(
+                frappe._(
+                    "Query {0} is locked to data source {1}. "
+                    "Changing its source would invalidate the company comparison."
+                ).format(self.title or self.name, self.locked_data_source)
+            )
 
     def _validate_referenced_queries(self):
         """A query may only reference a query its author can read.
@@ -153,6 +172,7 @@ class InsightsQueryv3(Document):
         return source_tables(self.name, self.operations)
 
     def build(self, active_operation_idx=None, use_live_connection=None):
+        self._validate_locked_data_source()
         builder = IbisQueryBuilder(self, active_operation_idx)
         builder.use_live_connection = (
             use_live_connection if use_live_connection is not None else self.use_live_connection

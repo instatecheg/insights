@@ -6,8 +6,10 @@ import { useRouter } from 'vue-router'
 import { downloadImage, waitUntil, wheneverChanges } from '../helpers'
 import useDashboard from './dashboard'
 import { __ } from '../translation'
+import LanguageSwitcher from '../components/LanguageSwitcher.vue'
 import DashboardItem from './DashboardItem.vue'
 import VueGridLayout from './VueGridLayout.vue'
+import DetailedProfitAndLoss from './DetailedProfitAndLoss.vue'
 import { useStorage } from '@vueuse/core'
 
 const props = defineProps<{ name: string }>()
@@ -26,7 +28,7 @@ function openWorkbook() {
 }
 await waitUntil(() => dashboard.isloaded)
 
-document.title = `${dashboard.doc.title} | Insights`
+document.title = `${__(dashboard.doc.title)} | Insights`
 
 const canOpenWorkbook = ref(dashboard.doc.has_workbook_access)
 
@@ -37,6 +39,11 @@ async function downloadDashboardImage() {
 }
 
 const verticalCompact = useStorage('dashboard_vertical_compact', true)
+const standaloneFinancialReport = computed(() =>
+	dashboard.doc.items.length === 1 && dashboard.doc.items[0].type === 'financial_report'
+)
+const logoFailed = ref(false)
+wheneverChanges(() => dashboard.doc.brand_logo, () => { logoFailed.value = false })
 </script>
 
 <template>
@@ -44,11 +51,18 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 		<Breadcrumbs
 			:items="[
 				{ label: __('Dashboards'), route: '/dashboards' },
-				{ label: dashboard.doc.title, route: `/dashboards/${dashboard.doc.name}` },
+				{ label: __(dashboard.doc.title), route: `/dashboards/${dashboard.doc.name}` },
 			]"
 		/>
 		<div class="flex items-center gap-2">
-			<Button variant="outline" @click="() => dashboard.refresh(true)" :label="__('Refresh')">
+			<LanguageSwitcher />
+			<Button
+				variant="outline"
+				@click="() => dashboard.refresh(true)"
+				:label="dashboard.synchronizing ? __('Synchronizing sources...') : __('Refresh')"
+				:loading="dashboard.refreshing"
+				:disabled="dashboard.refreshing"
+			>
 				<template #prefix>
 					<RefreshCcw class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 				</template>
@@ -78,8 +92,18 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 
 	<div class="relative flex h-full w-full overflow-hidden">
 		<div ref="dashboardContainer" class="flex-1 overflow-y-auto p-4">
+			<div v-if="dashboard.doc.brand_logo || dashboard.doc.brand_name" class="mb-4 flex items-center gap-4 rounded border border-gray-200 bg-white p-3">
+				<img v-if="dashboard.doc.brand_logo && !logoFailed" :src="dashboard.doc.brand_logo" :alt="dashboard.doc.brand_name || __('Holding company logo')" class="h-20 w-20 shrink-0 rounded object-contain" @error="logoFailed = true" />
+				<div class="min-w-0">
+					<h1 class="text-lg font-semibold">{{ dashboard.doc.brand_name }}</h1>
+					<p class="text-sm text-gray-600">{{ __(dashboard.doc.title) }}</p>
+					<p v-if="logoFailed" role="alert" class="text-sm text-red-700">{{ __('Unable to load the company logo. Check the dashboard Brand Logo attachment.') }}</p>
+				</div>
+			</div>
+			<DetailedProfitAndLoss v-if="standaloneFinancialReport" />
 			<VueGridLayout
-				v-if="dashboard.doc.items.length > 0"
+				dir="ltr"
+				v-else-if="dashboard.doc.items.length > 0"
 				class="h-fit w-full"
 				:cols="20"
 				:disabled="true"

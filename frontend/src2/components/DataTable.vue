@@ -7,6 +7,7 @@ import { usePagination } from '../composables/usePagination'
 import { createHeaders, formatNumber, getFormatUnits, getShortNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import { getRowCurrency } from '../query/helpers'
+import { __, direction } from '../translation'
 import {
 	applyDateRule,
 	applyRankRule,
@@ -137,7 +138,8 @@ const isStickyColumn = (column: string) => {
 const getStickyColumnStyle = (column: string) => {
 	if (!isStickyColumn(column)) return {}
 	return {
-		left: stickyColumnPositions.value[column] || '48px',
+		[direction === 'rtl' ? 'right' : 'left']:
+			stickyColumnPositions.value[column] || '48px',
 	}
 }
 
@@ -573,7 +575,7 @@ function toggleNewColumn() {
 <template>
 	<div
 		v-if="columns?.length || rows?.length"
-		class="flex h-full w-full flex-col overflow-hidden text-sm"
+		class="insights-data-table flex h-full w-full flex-col overflow-hidden text-sm"
 	>
 		<div class="w-full flex-1 overflow-y-auto">
 			<table class="relative h-full w-full border-separate border-spacing-0">
@@ -603,7 +605,7 @@ function toggleNewColumn() {
 						>
 							<DataTableColumn
 								v-if="header.isLast"
-								:label="header.label"
+								:label="__(header.label)"
 								:on-rename="
 									props.onColumnRename
 										? (newName) =>
@@ -627,7 +629,7 @@ function toggleNewColumn() {
 							</DataTableColumn>
 
 							<div v-else class="flex items-center truncate px-2">
-								{{ header.label }}
+								{{ __(header.label) }}
 							</div>
 						</td>
 
@@ -752,7 +754,12 @@ function toggleNewColumn() {
 							</template>
 
 							<template v-else>
-								{{ row[col.name] }}
+								{{
+									['account_type', 'voucher_type'].includes(col.name) &&
+									typeof row[col.name] === 'string'
+										? __(row[col.name])
+										: row[col.name]
+								}}
 							</template>
 						</td>
 

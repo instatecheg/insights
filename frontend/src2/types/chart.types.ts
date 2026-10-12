@@ -90,6 +90,7 @@ export type MixedChartConfig = AxisChartConfig & {
 }
 
 export type NumberChartConfig = {
+	finance_account_drilldown?: boolean
 	number_columns: Measure[]
 	number_column_options: NumberColumnOptions[]
 	comparison: boolean

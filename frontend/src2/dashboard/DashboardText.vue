@@ -1,19 +1,20 @@
 <script setup lang="ts">
 import { TextEditor } from 'frappe-ui'
-import { inject, ref, unref } from 'vue'
+import { computed, inject, ref, unref } from 'vue'
 import { WorkbookDashboardText } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
-import { __ } from '../translation'
+import { __, translateHtml } from '../translation'
 
 const dashboard = inject<Dashboard>('dashboard')!
 const props = defineProps<{ item: WorkbookDashboardText }>()
 
 const editedText = ref(unref(props.item.text))
+const displayText = computed(() => translateHtml(props.item.text))
 </script>
 
 <template>
 	<div class="prose w-full text-gray-700 h-full flex items-center">
-		<div v-html="props.item.text"></div>
+		<div v-html="displayText"></div>
 	</div>
 
 	<Dialog

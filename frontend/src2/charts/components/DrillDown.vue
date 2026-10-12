@@ -57,7 +57,7 @@ const groupBy = debounce(_groupBy, 50)
 	<Dialog
 		v-model="show"
 		:options="{
-			title: __('Drill Down'),
+			title: __(props.query.doc.title) || __('Drill Down'),
 			size: '5xl',
 		}"
 	>
@@ -80,7 +80,7 @@ const groupBy = debounce(_groupBy, 50)
 							:query="props.query"
 						>
 							<template #header-prefix="{ column }">
-								<Tooltip text="Group By" :hover-delay="0.2">
+								<Tooltip :text="__('Group By')" :hover-delay="0.2">
 									<Button
 										variant="ghost"
 										class="rounded-none"
