@@ -519,6 +519,24 @@ class WarehouseTableImporter:
         self.settings.sync_primary_key_column = table_doc.sync_primary_key_column or ""
         self.settings.sync_from = table_doc.sync_from  # Datetime or None
         self.settings.last_sync_bookmark = table_doc.last_sync_bookmark or ""
+        self.settings.complete_financial_history = (
+            self.table.table_name in ("tabGL Entry", "tabAccount", "tabCompany")
+            and frappe.db.exists("DocType", "CEO Company Source")
+            and bool(
+                frappe.db.exists(
+                    "CEO Company Source",
+                    {"data_source": self.table.data_source, "status": ["in", ["Registered", "Archived"]]},
+                )
+            )
+        )
+        if self.settings.complete_financial_history:
+            if table_doc.row_limit or self.settings.before_import_script:
+                frappe.throw(
+                    "Managed financial imports require complete tables without row limits or import scripts."
+                )
+            if self.settings.sync_mode != "Full":
+                frappe.throw("Managed financial tables require Full sync to include accounting corrections.")
+            self.settings.row_limit = 0
         self.log.db_set(
             {
                 "row_limit": self.settings.row_limit,
@@ -569,7 +587,9 @@ class WarehouseTableImporter:
             )
 
     def _prepare_full_table(self) -> None:
-        if hasattr(self.remote_table, "creation"):
+        if self.settings.complete_financial_history:
+            self.cursor_column = "name"
+        elif hasattr(self.remote_table, "creation"):
             self.cursor_column = "creation"
         elif hasattr(self.remote_table, "timestamp"):
             self.cursor_column = "timestamp"
@@ -579,7 +599,8 @@ class WarehouseTableImporter:
         self.dedupe_key_column = ""
 
         self._apply_before_import_script()
-        self.remote_table = self.apply_limit(self.remote_table)
+        if not self.settings.complete_financial_history:
+            self.remote_table = self.apply_limit(self.remote_table)
         self.writer_mode = "replace"
 
     def _prepare_incremental_table(self) -> None:
@@ -676,6 +697,8 @@ class WarehouseTableImporter:
         total_size = sum(sample_rows[column].memory_usage(deep=True) for column in sample_rows.columns)
         row_size = total_size / sample_size / (1024 * 1024)
         batch_size = int(self.settings.memory_limit / row_size)
+        if self.settings.complete_financial_history:
+            batch_size = max(1, min(batch_size, 5000))
         self.log.db_set(
             {
                 "row_size": row_size * 1024,

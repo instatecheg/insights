@@ -33,10 +33,34 @@ Back up the existing dashboard and queries before adoption.
    monthly trends, separate source cards and freshness status include the source.
 
 The three accounting tables are fully imported before dashboard membership is
-changed. Imports must have no row limits or import scripts. Failed registration
-is explicit and leaves membership unchanged; correct the underlying issue in
-Error Log/Data Store and click **Retry**. A functioning long-queue worker is
-required. Registration is administrator-only and takes up to 30 minutes.
+changed. Registration reads at most 5,000 rows per short long-queue job and
+automatically queues the next batch. Its staging data and primary-key cursor
+commit together in the site's persistent warehouse, so **Retry** resumes saved
+batches after worker interruption rather than starting over. Failed registration
+leaves membership unchanged. Progress displays the current table and saved row
+count. A functioning long-queue worker and enough persistent warehouse disk space
+are required; large ledgers may need many jobs, not a single 30-minute window.
+
+Imports must have no table row limits or import scripts. Registration bypasses
+the global Data Store record cap, and subsequent managed accounting-table full
+refreshes also bypass that cap and use small, unique-name-key batches. Unrelated
+imports retain their original settings. Source schema/identity changes refuse
+resume explicitly. The initial import bounds each table by its maximum primary
+key at first read; it is not a transactionally frozen snapshot of a changing ERP
+database. Refresh after registration to include subsequent changes.
+
+The three staged tables are verified and published atomically; partial data is
+never included in managed totals. Completed staging checkpoints are cleaned by
+a separate background job after registration. This resumable workflow covers
+**initial registration and its retries**. Normal dashboard/hourly refresh still
+uses the standard full-import worker; if that worker is externally terminated,
+the previous successful snapshot remains and Refresh must be retried. Smaller
+batches do not resolve repeated cloud worker shutdowns or insufficient disk.
+
+After deploying this update, run site migration to add the current-registration-
+job field, then click **Retry** once for a failed source. Pre-update imports wrote
+temporary files, not durable checkpoints, so their partial batches cannot be
+recovered by this new workflow.
 
 Database identity is deduplicated by host, port and database name, independent
 of the connection's label or username. Different host aliases or database

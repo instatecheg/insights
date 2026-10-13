@@ -24,6 +24,7 @@
  <section class="card p-3 mb-3">
   <h4>3. Register</h4>
   <p>Imports GL Entry, Account and Company, binds the financial query to this database, and adds it to the dashboard. A database can be registered only once.</p>
+  <p>Registration imports complete history in small background batches. Saved batches survive worker interruptions; <strong>Retry</strong> resumes them. No partial totals are published. Large sources may take longer; do not register them again.</p>
   <div><button id="register" class="btn btn-primary" disabled>Register checked source</button></div>
  </section>
  <section class="card p-3 mb-3">

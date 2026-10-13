@@ -6,7 +6,6 @@ from frappe.utils import get_datetime, now_datetime
 
 from insights.decorators import has_role
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
-from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 
 TABLE_COLUMNS = {
     "tabGL Entry": {
@@ -156,6 +155,7 @@ def registrations():
             "registered_on",
             "message",
             "modified",
+            "import_job",
         ],
         order_by="creation asc",
     )
@@ -167,7 +167,7 @@ def failed_registration_job(record):
 
     if record.status not in ("Queued", "Importing"):
         return False
-    job = get_job(f"ceo_register_{record.name}")
+    job = get_job(record.get("import_job") or f"ceo_register_{record.name}")
     if job:
         return job.get_status() in (JobStatus.FAILED, JobStatus.STOPPED, JobStatus.CANCELED)
     return (now_datetime() - get_datetime(record.modified)).total_seconds() > 300
@@ -186,8 +186,8 @@ def get_state():
     for row in rows:
         if failed_registration_job(row):
             row.status = "Failed"
-            row.message = (
-                "The background job stopped or was not found. Check the worker and Error Log, then Retry."
+            row.message = "The import job stopped or failed. Retry resumes saved registration batches. " + (
+                row.message or ""
             )
     return {"dashboard": doc.dashboard, "sources": sources, "registrations": rows}
 
@@ -211,6 +211,19 @@ def save_registration(record):
             record.set(field, frappe.as_json(record.get(field)))
     record.flags.registration_update = True
     record.save(ignore_permissions=True)
+
+
+def enqueue_registration(record):
+    record.import_job = f"ceo_register_{record.name}_{frappe.generate_hash(length=12)}"
+    save_registration(record)
+    frappe.enqueue(
+        "insights.ceo_finance.api.run_registration",
+        registration=record.name,
+        job_id=record.import_job,
+        queue="long",
+        timeout=120,
+        enqueue_after_commit=True,
+    )
 
 
 @frappe.whitelist(methods=["POST"])
@@ -240,14 +253,7 @@ def register_source(data_source, source_label):
             }
         )
         save_registration(record)
-        frappe.enqueue(
-            "insights.ceo_finance.api.run_registration",
-            registration=record.name,
-            job_id=f"ceo_register_{record.name}",
-            queue="long",
-            timeout=1800,
-            enqueue_after_commit=True,
-        )
+        enqueue_registration(record)
         # Imports commit separately; the queued reservation must outlive this lock.
         frappe.db.commit()
     return {"name": record.name, "dashboard": doc.dashboard}
@@ -262,21 +268,22 @@ def retry_registration(name):
         if record.status != "Failed" and not failed_registration_job(record):
             frappe.throw("Only failed registrations can be retried.")
         from frappe.utils.background_jobs import get_job
+        from rq.job import JobStatus
 
-        job = get_job(f"ceo_register_{name}")
+        job = get_job(record.get("import_job") or f"ceo_register_{name}")
+        if job and job.get_status() in (
+            JobStatus.STARTED,
+            JobStatus.QUEUED,
+            JobStatus.DEFERRED,
+            JobStatus.SCHEDULED,
+        ):
+            frappe.throw("This registration job is still active. Wait before retrying.")
         if job:
             job.delete()
         record.status = "Queued"
-        record.message = "Retry queued."
+        record.message = "Retry queued. Saved registration batches will be resumed."
         save_registration(record)
-        frappe.enqueue(
-            "insights.ceo_finance.api.run_registration",
-            registration=name,
-            job_id=f"ceo_register_{name}",
-            queue="long",
-            timeout=1800,
-            enqueue_after_commit=True,
-        )
+        enqueue_registration(record)
         frappe.db.commit()
     return {"name": name}
 
@@ -617,42 +624,32 @@ def link_financial_filters(items):
 
 def run_registration(registration):
     with frappe.cache.lock(
-        f"{frappe.local.site}:ceo-source-registration:{registration}", timeout=1900, blocking_timeout=5
+        f"{frappe.local.site}:ceo-source-registration:{registration}", timeout=150, blocking_timeout=10
     ):
         return _run_registration(registration)
 
 
 def _run_registration(registration):
-    from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
-        execute_warehouse_table_import,
-    )
+    from insights.ceo_finance.resumable_import import import_next_batch
 
     settings()
     record = frappe.get_doc("CEO Company Source", registration)
-    if record.status != "Queued":
+    if record.status not in ("Queued", "Importing"):
         return
     try:
-        source, companies = inspect_source(record.data_source)
-        if database_identity(source) != record.database_identity:
-            frappe.throw("The source database changed since registration. Restore its connection and retry.")
-        record.status, record.companies = "Importing", companies
-        save_registration(record)
-        frappe.db.commit()
-        for table in TABLE_COLUMNS:
-            record.db_set("message", f"Importing {table} ...", commit=True)
-            table_doc = frappe.get_doc("Insights Table v3", get_table_name(record.data_source, table))
-            if table_doc.before_import_script or table_doc.row_limit:
+        if record.status == "Queued":
+            source, companies = inspect_source(record.data_source)
+            if database_identity(source) != record.database_identity:
                 frappe.throw(
-                    f"Remove row limits and import scripts from {table} before registering financial data."
+                    "The source database changed since registration. Restore its connection and retry."
                 )
-            table_doc.sync_mode = "Full"
-            table_doc.save()
-            with frappe.cache.lock(
-                f"{frappe.local.site}:dashboard_import:{record.data_source}:{table}",
-                timeout=1800,
-                blocking_timeout=60,
-            ):
-                execute_warehouse_table_import(record.data_source, table)
+            record.status, record.companies = "Importing", companies
+            save_registration(record)
+            frappe.db.commit()
+        if not import_next_batch(record):
+            enqueue_registration(record)
+            frappe.db.commit()
+            return
         # Everything that changes dashboard membership commits atomically, after imports succeed.
         with frappe.cache.lock(f"{frappe.local.site}:ceo-registration", timeout=120, blocking_timeout=60):
             frappe.db.rollback()
@@ -690,10 +687,16 @@ def _run_registration(registration):
         frappe.log_error(title="CEO company registration failed", message=frappe.get_traceback())
         record = frappe.get_doc("CEO Company Source", registration)
         record.status = "Failed"
-        record.message = "Registration failed. Dashboard totals were not changed. Check Error Log and Data Store import logs, correct the issue, then Retry."
+        record.message = "Registration failed. Dashboard totals were not changed. Saved batches retained; check Error Log, correct the issue, then Retry to resume."
         save_registration(record)
         frappe.db.commit()
         raise
+    frappe.enqueue(
+        "insights.ceo_finance.resumable_import.cleanup_registration",
+        registration=record.name,
+        queue="long",
+        timeout=120,
+    )
 
 
 def protect_managed_query(doc, method=None):

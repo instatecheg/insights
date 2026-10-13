@@ -88,9 +88,22 @@ class TestRegistration(TestCase):
     @patch.object(api, "create_company_charts", return_value=[{"type": "text"}])
     @patch.object(api, "registrations")
     @patch.object(api, "update_dashboard")
-    @patch("insights.insights.doctype.insights_data_source_v3.data_warehouse.execute_warehouse_table_import")
+    @patch.object(api.frappe, "enqueue")
+    @patch("insights.ceo_finance.resumable_import.import_next_batch")
     def test_success_imports_all_tables_before_including_source(
-        self, importer, update, rows, charts, save, inspect, cache, rollback, commit, get_doc, settings
+        self,
+        importer,
+        enqueue,
+        update,
+        rows,
+        charts,
+        save,
+        inspect,
+        cache,
+        rollback,
+        commit,
+        get_doc,
+        settings,
     ):
         source = frappe._dict(is_site_db=0, host="host", port=3306, database_name="new")
         record = Mock(status="Queued", data_source="new", source_label="New")
@@ -117,18 +130,21 @@ class TestRegistration(TestCase):
 
         get_doc.side_effect = documents
 
-        def import_table(source_name, table_name):
+        def import_tables(registration):
             self.assertEqual(record.status, "Importing")
             update.assert_not_called()
+            return True
 
-        importer.side_effect = import_table
+        importer.side_effect = import_tables
         api.run_registration("record")
-        self.assertEqual(importer.call_count, 3)
-        self.assertEqual([call.args[1] for call in importer.call_args_list], list(api.TABLE_COLUMNS))
+        importer.assert_called_once_with(record)
         self.assertEqual(record.status, "Registered")
         self.assertEqual(record.financial_query, "new-query")
         query.execute.assert_called_once_with(force=True, page_size=1000)
         update.assert_called_once_with(config, rows.return_value, charts.return_value)
+        self.assertEqual(
+            enqueue.call_args.args[0], "insights.ceo_finance.resumable_import.cleanup_registration"
+        )
 
     def test_sar_only(self):
         api.validate_companies([{"name": "A", "default_currency": "SAR"}])
