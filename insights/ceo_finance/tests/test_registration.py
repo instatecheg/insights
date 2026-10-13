@@ -242,10 +242,48 @@ class TestRegistration(TestCase):
     @patch.object(api.frappe.db, "get_value")
     def test_registered_database_cannot_be_repointed(self, get_value, _exists):
         doc = frappe._dict(name="registered", is_site_db=0, host="host", port=3306, database_name="original")
-        get_value.return_value = api.database_identity(doc)
+        get_value.return_value = frappe._dict(
+            name="registered", database_identity=api.database_identity(doc), status="Registered"
+        )
         doc.database_name = "different"
         with self.assertRaisesRegex(frappe.ValidationError, "cannot be changed"):
             api.protect_registered_database(doc)
+
+    @patch.object(api.frappe, "logger")
+    @patch.object(api.frappe.db, "set_value")
+    @patch.object(api.frappe.db, "exists", return_value=True)
+    @patch.object(api.frappe.db, "get_value")
+    def test_restored_native_site_db_rebinds_during_fixture_migration(
+        self, get_value, _exists, set_value, _logger
+    ):
+        doc = frappe._dict(name="Site DB", is_site_db=1)
+        get_value.return_value = frappe._dict(
+            name="local-registration", database_identity="identity-from-source-site", status="Registered"
+        )
+        with patch.object(frappe, "flags", frappe._dict(in_migrate=True)):
+            api.protect_registered_database(doc)
+        self.assertEqual(
+            set_value.call_args.args,
+            (
+                "CEO Company Source",
+                "local-registration",
+                "database_identity",
+                api.database_identity(doc),
+            ),
+        )
+
+    @patch.object(api.frappe.db, "exists", return_value=True)
+    @patch.object(api.frappe.db, "get_value")
+    def test_remote_identity_cannot_be_rebound_during_migration(self, get_value, _exists):
+        doc = frappe._dict(name="Arena DB", is_site_db=0, host="remote", port=3306, database_name="ledger")
+        get_value.return_value = frappe._dict(
+            name="arena-registration",
+            database_identity="identity-from-source-site",
+            status="Registered",
+        )
+        with patch.object(frappe, "flags", frappe._dict(in_migrate=True)):
+            with self.assertRaisesRegex(frappe.ValidationError, "cannot be changed"):
+                api.protect_registered_database(doc)
 
     def test_json_lists_are_serialized_for_frappe_documents(self):
         record = frappe.get_doc(

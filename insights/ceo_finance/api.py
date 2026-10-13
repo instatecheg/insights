@@ -561,10 +561,27 @@ def protect_managed_query(doc, method=None):
 def protect_registered_database(doc, method=None):
     if not frappe.db.exists("DocType", "CEO Company Source"):
         return
-    identity = frappe.db.get_value(
-        "CEO Company Source", {"data_source": doc.name, "status": ["in", ACTIVE]}, "database_identity"
+    registration = frappe.db.get_value(
+        "CEO Company Source",
+        {"data_source": doc.name, "status": ["in", ACTIVE]},
+        ["name", "database_identity", "status"],
+        as_dict=True,
     )
-    if identity and database_identity(doc) != identity:
+    identity = database_identity(doc)
+    if registration and identity != registration.database_identity:
+        if doc.name == "Site DB" and doc.is_site_db and frappe.flags.in_migrate:
+            if registration.status in ("Queued", "Importing"):
+                frappe.throw("Finish pending Site DB registration before migrating to another database.")
+            frappe.db.set_value(
+                "CEO Company Source",
+                registration.name,
+                "database_identity",
+                identity,
+            )
+            frappe.logger("insights").info(
+                "Rebound native Site DB registrations to the current site database during fixture import."
+            )
+            return
         frappe.throw(
             "This database is registered on the CEO dashboard. Its host, port and database cannot be changed."
         )
