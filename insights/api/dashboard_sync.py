@@ -33,6 +33,15 @@ def _source_tables(dashboard) -> list[tuple[str, str]]:
             continue
         references = query.get_source_tables()
         if not references:
+            if frappe.db.exists("DocType", "CEO Company Source"):
+                config = frappe.get_single("CEO Dashboard Settings")
+                if (
+                    dashboard.name == config.dashboard
+                    and chart.query == config.combined_query
+                    and frappe.db.exists("CEO Company Source", {"status": "Archived"})
+                    and not frappe.db.exists("CEO Company Source", {"status": "Registered"})
+                ):
+                    continue
             frappe.throw(frappe._("Cannot determine source tables for chart {0}").format(chart.title))
         for reference in references:
             source, table = reference["data_source"], reference["table_name"]
@@ -48,9 +57,12 @@ def start_dashboard_sync(dashboard_name: str):
     from frappe.utils.background_jobs import get_job
 
     dashboard = _dashboard(dashboard_name)
-    _source_tables(dashboard)
     job_id = f"insights_dashboard_sync_{dashboard_name}"
-    with frappe.cache.lock(f"{frappe.local.site}:{job_id}", timeout=10, blocking_timeout=5):
+    with (
+        frappe.cache.lock(f"{frappe.local.site}:ceo-registration", timeout=120, blocking_timeout=10),
+        frappe.cache.lock(f"{frappe.local.site}:{job_id}", timeout=10, blocking_timeout=5),
+    ):
+        _source_tables(dashboard)
         job = get_job(job_id)
         if not job or job.get_status() not in (
             JobStatus.QUEUED,

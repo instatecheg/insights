@@ -206,7 +206,7 @@ def preview_source(data_source):
 
 
 def save_registration(record):
-    for field in ("companies", "dashboard_items"):
+    for field in ("companies", "dashboard_items", "archived_items"):
         if isinstance(record.get(field), (list, dict)):
             record.set(field, frappe.as_json(record.get(field)))
     record.flags.registration_update = True
@@ -283,12 +283,23 @@ def retry_registration(name):
 
 def create_company_charts(record, config, query):
     items = frappe.parse_json(frappe.get_doc("Insights Dashboard v3", config.dashboard).items) or []
+    template_items = list(items)
+    archived_items = frappe.db.get_value(
+        "CEO Company Source", {"financial_query": config.template_query}, "archived_items"
+    )
+    template_items.extend(
+        entry["item"]
+        for entry in frappe.parse_json(archived_items) or []
+        if entry["dashboard"] == config.dashboard
+    )
     templates = []
-    for item in items:
+    seen = set()
+    for item in template_items:
         if item.get("type") == "chart":
             chart = frappe.get_doc("Insights Chart v3", item["chart"])
-            if chart.query == config.template_query:
+            if chart.query == config.template_query and chart.name not in seen:
                 templates.append(chart)
+                seen.add(chart.name)
     if not templates:
         frappe.throw("The dashboard has no per-company card templates.")
     y = (
@@ -380,7 +391,8 @@ def replace_query_reference(value, old_name, new_name):
 def update_dashboard(config, records, items=None):
     dashboard = frappe.get_doc("Insights Dashboard v3", config.dashboard)
     combined = frappe.get_doc("Insights Query v3", config.combined_query)
-    combined.operations = union_operations(records, dashboard.workbook)
+    combined.is_native_query = not bool(records)
+    combined.operations = combined_operations(records, dashboard.workbook)
     combined.use_live_connection = 0
     combined.save()
     if config.freshness_query:
@@ -388,12 +400,13 @@ def update_dashboard(config, records, items=None):
         labels = " ".join(
             f"WHEN {sql_literal(row.data_source)} THEN {sql_literal(row.source_label)}" for row in records
         )
-        sources = ", ".join(sql_literal(row.data_source) for row in records)
+        sources = ", ".join(sql_literal(row.data_source) for row in records) or "NULL"
+        source_case = f"CASE t.data_source {labels} END" if records else "NULL"
         query.operations = [
             {
                 "type": "sql",
                 "data_source": "Site DB",
-                "raw_sql": f"""SELECT CASE t.data_source {labels} END AS Source,
+                "raw_sql": f"""SELECT {source_case} AS Source,
  t.`table` AS Accounting_Table,
  DATE_FORMAT(t.last_synced_on,'%Y-%m-%d %H:%i:%s') AS Last_Successful_Sync,
  CASE WHEN t.last_synced_on IS NULL THEN 'NEVER SYNCED'
@@ -429,6 +442,165 @@ def update_dashboard(config, records, items=None):
     dashboard.items = items
     dashboard.sync_on_refresh = 1
     dashboard.save()
+
+
+def combined_operations(records, workbook):
+    if records:
+        return union_operations(records, workbook)
+    return [
+        {
+            "type": "sql",
+            "data_source": "Site DB",
+            "raw_sql": """SELECT '' AS source_site, '' AS company, 'SAR' AS currency,
+        '' AS company_label, '' AS gl_entry, CAST(NULL AS DATE) AS posting_date,
+        '' AS report_year, '' AS month_start, '' AS account, '' AS account_type,
+        '' AS voucher_type, '' AS voucher_no, 0.0 AS debit, 0.0 AS credit,
+        0.0 AS total_income, 0.0 AS total_expense, 0.0 AS net_profit WHERE 1=0""",
+        }
+    ]
+
+
+def check_membership_change(config):
+    from frappe.utils.background_jobs import get_job
+    from rq.job import JobStatus
+
+    if frappe.db.exists("CEO Company Source", {"status": ["in", ["Queued", "Importing"]]}):
+        frappe.throw("Wait for pending registrations to finish before changing source membership.")
+    for dashboard in filter(None, (config.dashboard, config.technical_dashboard)):
+        job = get_job(f"insights_dashboard_sync_{dashboard}")
+        if job and job.get_status() in (
+            JobStatus.QUEUED,
+            JobStatus.STARTED,
+            JobStatus.DEFERRED,
+            JobStatus.SCHEDULED,
+        ):
+            frappe.throw("Wait for dashboard Refresh to finish before changing source membership.")
+
+
+@frappe.whitelist(methods=["POST"])
+def disconnect_source(name):
+    config = settings()
+    with frappe.cache.lock(f"{frappe.local.site}:ceo-registration", timeout=120, blocking_timeout=10):
+        record = frappe.get_doc("CEO Company Source", name)
+        record.check_permission("read")
+        if record.status != "Registered":
+            frappe.throw("Only registered sources can be disconnected.")
+        check_membership_change(config)
+        archived = frappe.parse_json(record.archived_items) or []
+        for dashboard_name in filter(None, (config.dashboard, config.technical_dashboard)):
+            dashboard = frappe.get_doc("Insights Dashboard v3", dashboard_name)
+            dashboard.check_permission("write")
+            items = frappe.parse_json(dashboard.items) or []
+            generated = (
+                set(frappe.parse_json(record.dashboard_items) or [])
+                if dashboard_name == config.dashboard
+                else set()
+            )
+            retained = []
+            for item in items:
+                remove = item.get("layout", {}).get("i") in generated
+                dependencies = [record.data_source]
+                if item.get("type") == "chart":
+                    chart = frappe.get_doc("Insights Chart v3", item["chart"])
+                    remove = remove or chart.query == record.financial_query
+                    if dashboard_name == config.technical_dashboard and chart.query != config.freshness_query:
+                        query = frappe.get_doc("Insights Query v3", chart.data_query)
+                        dependencies = sorted({ref["data_source"] for ref in query.get_source_tables()})
+                        remove = remove or record.data_source in dependencies
+                if remove:
+                    archived.append({"dashboard": dashboard_name, "item": item, "sources": dependencies})
+                else:
+                    retained.append(item)
+            removed_ids = {
+                entry["item"]["layout"]["i"] for entry in archived if entry["dashboard"] == dashboard_name
+            }
+            for index, item in enumerate(items[:-1]):
+                if (
+                    item.get("type") == "text"
+                    and "<h3>" in item.get("text", "")
+                    and item in retained
+                    and items[index + 1]["layout"]["i"] in removed_ids
+                ):
+                    retained.remove(item)
+                    next_entry = next(
+                        entry
+                        for entry in archived
+                        if entry["dashboard"] == dashboard_name
+                        and entry["item"]["layout"]["i"] == items[index + 1]["layout"]["i"]
+                    )
+                    archived.append(
+                        {"dashboard": dashboard_name, "item": item, "sources": next_entry["sources"]}
+                    )
+            dashboard.items = frappe.as_json(retained)
+            dashboard.save()
+        record.archived_items = archived
+        record.status = "Archived"
+        record.message = (
+            "Disconnected from managed reporting. Connection and charts retained; Reactivate to restore."
+        )
+        save_registration(record)
+        rows = [frappe._dict(row) for row in registrations() if row.status == "Registered"]
+        update_dashboard(config, rows)
+    return {"name": name, "status": "Archived"}
+
+
+@frappe.whitelist(methods=["POST"])
+def reactivate_source(name):
+    config = settings()
+    with frappe.cache.lock(f"{frappe.local.site}:ceo-registration", timeout=120, blocking_timeout=10):
+        record = frappe.get_doc("CEO Company Source", name)
+        record.check_permission("read")
+        if record.status != "Archived":
+            frappe.throw("Only disconnected sources can be reactivated.")
+        check_membership_change(config)
+        source, companies = inspect_source(record.data_source)
+        if database_identity(source) != record.database_identity:
+            frappe.throw("Restore this connection's original database before reactivation.")
+        record.companies = companies
+        record.status = "Registered"
+        save_registration(record)
+        restore_archived_items(record)
+        rows = [frappe._dict(row) for row in registrations() if row.status == "Registered"]
+        update_dashboard(config, rows)
+        record.message = "Reactivated. Refresh the CEO dashboard to import current data."
+        save_registration(record)
+    return {"name": name, "status": "Registered"}
+
+
+def restore_archived_items(record):
+    archived_sources = set(
+        frappe.get_all("CEO Company Source", filters={"status": "Archived"}, pluck="data_source")
+    )
+    records = [record]
+    records.extend(
+        frappe.get_doc("CEO Company Source", name)
+        for name in frappe.get_all(
+            "CEO Company Source", filters={"status": "Registered", "name": ["!=", record.name]}, pluck="name"
+        )
+    )
+    for owner in records:
+        grouped, deferred = {}, []
+        for entry in frappe.parse_json(owner.archived_items) or []:
+            if archived_sources.intersection(entry.get("sources", [owner.data_source])):
+                deferred.append(entry)
+            else:
+                grouped.setdefault(entry["dashboard"], []).append(entry["item"])
+        for dashboard_name, restored in grouped.items():
+            dashboard = frappe.get_doc("Insights Dashboard v3", dashboard_name)
+            dashboard.check_permission("write")
+            items = frappe.parse_json(dashboard.items) or []
+            existing = {item["layout"]["i"] for item in items}
+            restored = [item for item in restored if item["layout"]["i"] not in existing]
+            if restored:
+                bottom = max((i["layout"]["y"] + i["layout"]["h"] for i in items), default=0)
+                offset = bottom + 1 - min(i["layout"]["y"] for i in restored)
+                for item in restored:
+                    item["layout"]["y"] += offset
+                items.extend(restored)
+            dashboard.items = frappe.as_json(items)
+            dashboard.save()
+        owner.archived_items = deferred
+        save_registration(owner)
 
 
 def link_financial_filters(items):
@@ -529,7 +701,7 @@ def protect_managed_query(doc, method=None):
         return
     record = frappe.db.get_value(
         "CEO Company Source",
-        {"financial_query": doc.name, "status": "Registered"},
+        {"financial_query": doc.name, "status": ["in", ["Registered", "Archived"]]},
         ["data_source", "source_label"],
         as_dict=True,
     )
@@ -548,9 +720,12 @@ def protect_managed_query(doc, method=None):
             )
     config = frappe.get_single("CEO Dashboard Settings")
     if config.combined_query == doc.name:
-        rows = [frappe._dict(row) for row in registrations() if row.status == "Registered"]
-        if rows and (
-            frappe.parse_json(doc.operations) != union_operations(rows, doc.workbook)
+        all_rows = registrations()
+        if not all_rows:
+            return
+        rows = [frappe._dict(row) for row in all_rows if row.status == "Registered"]
+        if (
+            frappe.parse_json(doc.operations) != combined_operations(rows, doc.workbook)
             or doc.use_live_connection
         ):
             frappe.throw(
@@ -563,7 +738,7 @@ def protect_registered_database(doc, method=None):
         return
     registration = frappe.db.get_value(
         "CEO Company Source",
-        {"data_source": doc.name, "status": ["in", ACTIVE]},
+        {"data_source": doc.name, "status": ["in", [*ACTIVE, "Archived"]]},
         ["name", "database_identity", "status"],
         as_dict=True,
     )

@@ -226,9 +226,11 @@ class TestRegistration(TestCase):
     @patch.object(api.frappe, "log_error")
     @patch.object(api, "inspect_source", side_effect=RuntimeError("connection failure"))
     @patch.object(api, "update_dashboard")
+    @patch.object(api.frappe, "cache")
     def test_import_failure_does_not_change_dashboard(
-        self, update, _inspect, log_error, _commit, _rollback, get_doc, save, _settings
+        self, cache, update, _inspect, log_error, _commit, _rollback, get_doc, save, _settings
     ):
+        cache.lock.return_value = nullcontext()
         record = Mock(status="Queued", data_source="source")
         get_doc.return_value = record
         with self.assertRaisesRegex(RuntimeError, "connection failure"):

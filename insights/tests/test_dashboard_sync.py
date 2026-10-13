@@ -50,6 +50,21 @@ class TestDashboardSync(TestCase):
             with self.assertRaises(frappe.ValidationError):
                 dashboard_sync._source_tables(dashboard)
 
+    def test_all_archived_financial_sources_need_no_import(self):
+        dashboard = MagicMock(items=[{"type": "chart", "chart": "summary"}])
+        dashboard.name = "main"
+        chart = MagicMock(data_query="data", query="combined")
+        query = MagicMock(use_live_connection=False)
+        query.get_source_tables.return_value = []
+        with (
+            patch.object(frappe, "get_doc", side_effect=[chart, query]),
+            patch.object(
+                frappe, "get_single", return_value=frappe._dict(dashboard="main", combined_query="combined")
+            ),
+            patch.object(frappe.db, "exists", side_effect=[True, True, False]),
+        ):
+            self.assertEqual(dashboard_sync._source_tables(dashboard), [])
+
     def test_non_admin_cannot_sync(self):
         with patch("insights.decorators.has_role", return_value=False):
             with self.assertRaises(frappe.PermissionError):

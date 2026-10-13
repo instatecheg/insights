@@ -42,10 +42,30 @@ Database identity is deduplicated by host, port and database name, independent
 of the connection's label or username. Different host aliases or database
 copies cannot be detected as the same business ledger: review company names
 before registration and never add a replicated copy of an existing source.
-Records and source identities are immutable; source removal is not offered.
+Source identities are immutable; permanent source deletion is not offered.
 Database passwords/users can be rotated through Insights without changing
 the database identity. Labels and accounting queries are managed, not manually
 editable after registration.
+
+### Disconnecting and reactivating
+
+On **Company Sources**, click **Disconnect** beside a Registered source. It becomes
+**Archived**: managed CEO totals, detailed P&L and source-specific dashboard cards
+exclude it, while its connection, queries and charts remain stored. Disconnecting
+the final source leaves an empty combined dataset rather than a broken UNION query.
+This is a reporting archive, not a global connection disable: unrelated queries
+and Data Store hourly/scheduled imports may still use the connection.
+
+To restore it, correct its password securely in Insights Data Sources if needed,
+then click **Reactivate**. The original database identity and SAR companies are
+checked again. Saved cards are restored below existing dashboard items without
+duplicates. Shared technical cards stay hidden until every source they reference
+is active again. Wait for pending registration or dashboard Refresh jobs to finish
+before changing membership. Reload dashboards, clear any old company selection, and click **Refresh**
+to import current data; before Refresh the CEO overview may show its old snapshot.
+Use Reactivate for an archived database rather than registering it twice. A
+different database endpoint must be added as a new connection and registration.
+Deploy this branch and run site migration to add the archive field before use.
 
 ### Accounting and refresh
 

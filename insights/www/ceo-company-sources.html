@@ -29,6 +29,7 @@
  <section class="card p-3 mb-3">
   <h4>4. Review and refresh</h4>
   <p>Wait for <strong>Registered</strong>, then reload the CEO dashboard and click <strong>Refresh</strong>. It synchronizes every registered source. Hourly imports also remain enabled.</p>
+  <p><strong>Disconnect</strong> archives a source from managed reporting without deleting its connection or charts. Other queries and scheduled imports are not disabled. Use <strong>Reactivate</strong> to restore it, then reload dashboards, clear old company selections and Refresh for current data. Finish pending registration or Refresh jobs before changing membership.</p>
   <div class="table-responsive"><table class="table"><thead><tr><th>Label</th><th>Companies</th><th>Status</th><th>Progress</th><th>Action</th></tr></thead><tbody id="registrations"></tbody></table></div>
  </section>
 </div>
@@ -77,6 +78,19 @@
    cell(row, companies.map(c => c.name + ' (SAR)').join(', '));
    cell(row, record.status); cell(row, record.message || '');
    const action = cell(row, '');
+   if (['Registered', 'Archived'].includes(record.status)) {
+    const archived = record.status === 'Archived';
+    const button = document.createElement('button');
+    button.className = 'btn btn-sm btn-outline-primary';
+    button.textContent = archived ? 'Reactivate' : 'Disconnect';
+    button.onclick = () => run(button, async () => {
+     if (!confirm((archived ? 'Restore ' : 'Exclude ') + record.source_label +
+      (archived ? ' in managed reporting? Refresh afterward for current data.' : ' from managed reporting? Its connection and charts will be retained.'))) return;
+     await rpc(archived ? 'reactivate_source' : 'disconnect_source', {name: record.name});
+     resetPreview(); await load();
+    });
+    action.append(button);
+   }
    if (record.status === 'Failed') {
     const button = document.createElement('button'); button.className = 'btn btn-sm btn-outline-primary'; button.textContent = 'Retry';
     button.onclick = () => run(button, async () => { await rpc('retry_registration', {name:record.name}); pollStarted = Date.now(); await load(); });
@@ -114,7 +128,7 @@
   for (const company of data.companies) { const item = document.createElement('li'); item.textContent = company.name + ' — ' + company.default_currency; list.append(item); }
   result.append(heading, list);
   if (data.existing) {
-   const note = document.createElement('p'); note.textContent = 'Already listed as ' + data.existing.source_label + ' (' + data.existing.status + '). This database will not be counted twice.'; result.append(note);
+   const note = document.createElement('p'); note.textContent = 'Already listed as ' + data.existing.source_label + ' (' + data.existing.status + '). ' + (data.existing.status === 'Archived' ? 'Use Reactivate in the list below to restore it.' : 'This database will not be counted twice.'); result.append(note);
   } else {
    checkedSource = source; find('register').disabled = !find('label').value.trim();
   }
