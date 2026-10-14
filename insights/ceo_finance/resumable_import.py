@@ -4,10 +4,10 @@ import hashlib
 from contextlib import contextmanager
 
 import frappe
-import ibis
 
 import insights
 from insights.ceo_finance.api import TABLE_COLUMNS, database_identity, source_doc
+from insights.insights.doctype.insights_data_source_v3.batch_conversion import batch_memtable
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 
@@ -93,7 +93,7 @@ def append_batch(
         staged_table = f"_{schema}_{frappe.scrub(table)}" if target_schema else table
         db.raw_sql(f"CREATE SCHEMA IF NOT EXISTS {identifier(destination)}")
         if len(data):
-            incoming = ibis.memtable(data, schema=remote_schema)
+            incoming = batch_memtable(data, remote_schema)
             if state:
                 db.insert(staged_table, incoming, database=destination)
             else:

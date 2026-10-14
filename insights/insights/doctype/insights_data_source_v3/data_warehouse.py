@@ -20,6 +20,7 @@ from ibis.common.exceptions import TableNotFound
 from ibis.expr.types import Expr, Table
 
 import insights
+from insights.insights.doctype.insights_data_source_v3.batch_conversion import batch_memtable
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
     IMPORT_WRITE_LOCK_TIMEOUT,
     WRITE_LOCK_TIMEOUT,
@@ -181,7 +182,7 @@ class WarehouseTableWriter:
             raise RuntimeError("WarehouseTableWriter must be used as a context manager")
 
         # switch to memory backend for writing to temp directory
-        data = ibis.memtable(data)
+        data = batch_memtable(data, self.table_schema)
 
         parquet_path = self._temp_dir / f"batch_{self._batch_count + 1}.parquet"
         self._log(f"Writing batch {self._batch_count + 1}")

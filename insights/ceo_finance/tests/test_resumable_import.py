@@ -100,6 +100,56 @@ class TestResumableImport(TestCase):
         self.assertTrue(state.complete)
         self.assertEqual(self.db.table("tabGL Entry", database=self.stage).schema(), self.schema)
 
+    def test_custom_time_duration_batches_resume_with_nulls_and_microseconds(self):
+        from datetime import time
+
+        schema = ibis.schema({"name": "string", "custom_start_time": "time", "amount": "int64"})
+        first = pd.DataFrame(
+            {
+                "name": ["a", "b"],
+                "custom_start_time": pd.to_timedelta(["08:15:30.123456", None]),
+                "amount": [123, -42],
+            }
+        )
+        second = pd.DataFrame(
+            {
+                "name": ["c"],
+                "custom_start_time": pd.to_timedelta(["23:59:59.999999"]),
+                "amount": [0],
+            }
+        )
+        for data, last in ((first, None), (second, "b")):
+            importer.append_batch(self.db, self.stage, "tabGL Entry", data, schema, "identity", "z", last)
+        rows = self.db.con.execute(
+            f'SELECT name, custom_start_time, amount FROM "{self.stage}"."tabGL Entry" ORDER BY name'
+        ).fetchall()
+        self.assertEqual(
+            rows,
+            [
+                ("a", time(8, 15, 30, 123456), 123),
+                ("b", None, -42),
+                ("c", time(23, 59, 59, 999999), 0),
+            ],
+        )
+        self.assertEqual(importer.checkpoint(self.db, self.stage, "tabGL Entry").rows_imported, 3)
+
+    def test_invalid_duration_leaves_saved_rows_and_checkpoint_unchanged(self):
+        schema = ibis.schema({"name": "string", "custom_start_time": "time"})
+        first = pd.DataFrame(
+            {
+                "name": ["a", "b"],
+                "custom_start_time": pd.to_timedelta(["00:00:00", None]),
+            }
+        )
+        importer.append_batch(self.db, self.stage, "tabGL Entry", first, schema, "identity", "z", None)
+        for value in ("-00:00:01", "24:00:00", "48:00:00"):
+            data = pd.DataFrame({"name": ["c"], "custom_start_time": pd.to_timedelta([value])})
+            with self.assertRaisesRegex(ValueError, "custom_start_time.*outside"):
+                importer.append_batch(self.db, self.stage, "tabGL Entry", data, schema, "identity", "z", "b")
+            state = importer.checkpoint(self.db, self.stage, "tabGL Entry")
+            self.assertEqual((state.last_key, state.rows_imported), ("b", 2))
+            self.assertEqual(self.db.table("tabGL Entry", database=self.stage).count().execute(), 2)
+
     def prepare_source(self):
         for table in api.TABLE_COLUMNS:
             self.db.create_table(

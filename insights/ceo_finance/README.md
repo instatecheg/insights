@@ -62,6 +62,14 @@ job field, then click **Retry** once for a failed source. Pre-update imports wro
 temporary files, not durable checkpoints, so their partial batches cannot be
 recovered by this new workflow.
 
+MariaDB TIME fields (including custom fields) can arrive as pandas durations.
+Import batches convert these to Arrow time-of-day values before both resumable
+registration writes and standard refresh writes, preserving nulls and MariaDB
+microsecond precision. Negative durations or values of 24 hours or more fail
+explicitly with the column name: the warehouse TIME type cannot represent them
+without changing their meaning. Failed batch conversion leaves saved rows and
+checkpoints unchanged; deploy the conversion fix and Retry to resume.
+
 Database identity is deduplicated by host, port and database name, independent
 of the connection's label or username. Different host aliases or database
 copies cannot be detected as the same business ledger: review company names
